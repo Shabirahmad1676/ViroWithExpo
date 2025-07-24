@@ -28,18 +28,9 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={colorScheme === 'light' ? DarkTheme : DefaultTheme}>
       <Stack>
-         <Stack.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          // tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      /> 
-        {/* <Stack.Screen name='index' options={{ title:'Home' }}  /> */}
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
+        <Stack.Screen name="index" options={{title:'Home'}} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
