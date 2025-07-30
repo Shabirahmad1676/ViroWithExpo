@@ -6,7 +6,7 @@ export function HelloWave() {
   return (
     <ViroARScene>
       <ViroText
-        text="Welcome to mardan"
+        text="Bircube"
         position={[0, -0.1, -1]}
         style={styles.text}
       />

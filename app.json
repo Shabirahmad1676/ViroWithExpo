@@ -27,7 +27,12 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.bircube.vtour",
-      "jsEngine": "hermes"
+      "jsEngine": "hermes",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCDr2km6WU6bMmTgMW3eJ4K784IKvfPbwM"
+        }
+      }
     },
     "web": {
       "bundler": "metro",
