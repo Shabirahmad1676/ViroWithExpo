@@ -4,15 +4,16 @@ import {
   ViroAmbientLight,
   ViroBox,
   ViroMaterials,
-  ViroAnimations
+  ViroAnimations,
+  Viro3DObject
 } from "@reactvision/react-viro";
-import { Text } from "react-native";
 
 
 //this is for adding texture
 ViroMaterials.createMaterials({
         wood:{
-            diffuseTexture:require('../assets/wood.jpg')
+            // diffuseTexture:require('../assets/wood.jpg')
+            diffuseTexture:require('../assets/heart_texture.jpg')
         }
     })
 
@@ -23,7 +24,6 @@ ViroAnimations.registerAnimations({
     properties: {
       rotateY: '+=45',
       rotateX: '+=45',
-      
     }, 
     duration: 1000
   },
@@ -41,15 +41,15 @@ const HelloAR = () => {
         scale={[0.5, 0.5, 0.5]}
         style={{fontSize:30,color:'red'}}
       /> */}
+
+      {/* ViroBox */}
       <ViroBox
-          animation={{name: 'loopRotate', run: true, loop: true}}
-        height={2}
-        length={2}
-        width={2}
-        position={[0, 0, -4]}
-        scale={[0.2, 0.2, 0.2]}
+          animation={{name: 'loopRotate',run:true, loop: true}}
+        position={[0, 0, -2]}
+        scale={[0.9, 0.9, 0.9]}
         materials={["wood"]}
       />
+
     </ViroARScene>
   );
 };
