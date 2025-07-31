@@ -3,6 +3,7 @@ import {
   ViroARSceneNavigator,
 } from '@reactvision/react-viro';
 import HelloAR from '../components/HelloAR';
+import Object3d from '../components/Object3d';
 
 
 
@@ -11,7 +12,8 @@ import HelloAR from '../components/HelloAR';
 const index = () => {
   return (
     <ViroARSceneNavigator
-      initialScene={{ scene: HelloAR }}
+    //   initialScene={{ scene: HelloAR }}
+      initialScene={{ scene: Object3d }}
     />
   );
 };
