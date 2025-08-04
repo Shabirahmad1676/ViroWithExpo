@@ -28,7 +28,7 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={colorScheme === 'light' ? DarkTheme : DefaultTheme}>
       <Stack screenOptions={{
         headerStyle: {
           backgroundColor: '#1ef4d7ff',
@@ -40,10 +40,11 @@ export default function RootLayout() {
         headerTitleAlign: 'center',
       }}>
         <Stack.Screen name="index" options={{title:'Home'}} />
+        <Stack.Screen name="Intrest" options={{title:'Intrest'}} />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar
-        style={colorScheme === 'dark' ? 'light' : 'dark'}
+        style='auto'
       />
     </ThemeProvider>
   );
