@@ -5,7 +5,6 @@ import {
   ViroBox,
   ViroMaterials,
   ViroAnimations,
-  Viro3DObject
 } from "@reactvision/react-viro";
 
 
@@ -13,7 +12,7 @@ import {
 ViroMaterials.createMaterials({
         wood:{
             // diffuseTexture:require('../assets/wood.jpg')
-            diffuseTexture:require('../assets/heart_texture.jpg')
+            diffuseTexture:require('../assets/wood.jpg')
         }
     })
 
@@ -23,7 +22,7 @@ ViroAnimations.registerAnimations({
   loopRotate: {
     properties: {
       rotateY: '+=45',
-      rotateX: '+=45',
+      rotateX: '+=90',
     }, 
     duration: 1000
   },
