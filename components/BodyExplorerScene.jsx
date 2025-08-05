@@ -2,33 +2,36 @@ import React, { useState } from "react";
 import {
   ViroARScene,
   Viro3DObject,
+  ViroImage,
   ViroText,
   ViroAmbientLight,
 } from "@reactvision/react-viro";
 
 const organs = {
   heart: {
-    model: require("../assets/heart.glb"),
+    image: require("../assets/heart_texture.jpg"),
     description: "The heart pumps blood throughout the body.",
-    scale: [0.3, 0.3, 0.3],
+    scale: [1, 1, 1],
   },
   brain: {
-    model: require("../assets/brain.glb"),
+    image: require("../assets/brain.png"),
     description: "The brain controls thoughts, memory, and movement.",
-    scale: [0.2, 0.2, 0.2],
+    scale: [1, 1, 1],
   },
   lungs: {
-    model: require("../assets/lungs.glb"),
+    image: require("../assets/lungs.jpg"),
     description: "Lungs help you breathe by taking in oxygen.",
-    scale: [0.5, 0.5, 0.5],
+    scale: [1, 1, 1],
   },
 };
 
+
 const BodyExplorerScene = () => {
-  const [selected, setSelected] = useState("heart");
+  const [selected, setSelected] = useState("brain");
   const [showInfo, setShowInfo] = useState(false);
 
-  const { model, description, scale } = organs[selected];
+  const { image, description, scale } = organs[selected];
+
 
   return (
     <ViroARScene>
@@ -37,13 +40,13 @@ const BodyExplorerScene = () => {
       {/* Organ Buttons */}
       <ViroText
         text="Heart"
-        position={[-0.5, 0.4, -2]}
+        position={[0, 0, -1]}
         onClick={() => { setSelected("heart"); setShowInfo(false); }}
         style={{ fontSize: 20, color: "red" }}
       />
       <ViroText
         text="Brain"
-        position={[0, 0.4, -4]}
+        position={[0, 0.4, -2]}
         onClick={() => { setSelected("brain"); setShowInfo(false); }}
         style={{ fontSize: 20, color: "purple" }}
       />
@@ -54,19 +57,15 @@ const BodyExplorerScene = () => {
         style={{ fontSize: 20, color: "blue" }}
       />
 
-      {/* Active 3D Organ */}
-      <Viro3DObject
-        source={model}
-        type="GLB"
-        position={[0, -0.3, -3]}
-        scale={scale}
-        onClick={() => setShowInfo(!showInfo)}
-        dragType="FixedToWorld"
-        onDrag={() => console.log("Dragging")}
-        onPinch={(pinchState, scaleFactor, source) => {
-          if (pinchState === 3) console.log("Pinch complete:", scaleFactor);
-        }}
-      />
+      <ViroImage
+  source={image}
+  position={[0, -0.3, -3.2]}
+  scale={scale}
+  onClick={() => setShowInfo(!showInfo)}
+  dragType="FixedToWorld"
+  onDrag={() => console.log("Dragging")}
+/>
+
 
       {/* Info Text */}
       {showInfo && (
