@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   ViroARScene,
   ViroARImageMarker,
@@ -8,6 +8,7 @@ import {
   ViroAnimations,
   ViroText
 } from "@reactvision/react-viro";
+import { Linking } from "react-native";
 
 
 // Register the target (can be moved to a separate file)
@@ -30,16 +31,35 @@ ViroAnimations.registerAnimations({
 });
 
 export default function MarkerScene() {
+
+     const [markerVisible, setMarkerVisible] = useState(false);
+
+
    const openURL = () => {
     Linking.openURL("https://yourwebsite.com");
   };
 
+  const contactOnWhatsApp = () => {
+  const phone = "1234567890"; // Your number (with country code, e.g. +91)
+  const message = "Hello! I'm interested in your services.";
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  Linking.openURL(url);
+};
+
+
   return (
     <ViroARScene>
-       <ViroAmbientLight color="#FFFFFF" />
+       <ViroAmbientLight color="#FFFFFF" intensity={200} temperature={300} />
       <ViroARImageMarker
         target={"logoMarker"}
-        onAnchorFound={() => console.log("🎯 Marker detected!")}
+         onAnchorFound={() => {
+          console.log("🎯 Marker detected!");
+          setMarkerVisible(true);
+        }}
+        onAnchorRemoved={() => {
+          console.log("❌ Marker lost");
+          setMarkerVisible(false);
+        }}
       >
         {/* <Viro3DObject
         animation={{ name: "loopRotate", run: true, loop: true }}
@@ -49,7 +69,9 @@ export default function MarkerScene() {
           type="GLB"
         /> */}
 
-          <ViroText
+        {markerVisible && (
+            <>
+              <ViroText
           text="🔗 Visit Website"
           position={[0, 0, -2]}
           scale={[0.3, 0.3, 0.3]}
@@ -58,8 +80,22 @@ export default function MarkerScene() {
           // width={2}
           // height={2}
         />
+
+        <ViroText
+  text="💬 Contact on WhatsApp"
+  position={[0, -0.3, -0.5]}  // Adjust based on layout
+  scale={[0.2, 0.2, 0.2]}
+  style={{
+    fontSize: 18,
+    color: "#25D366", // WhatsApp green
+    fontWeight: "bold",
+    textAlign: "center",
+  }}
+  onClick={contactOnWhatsApp}
+/>
+            </>
+        )}
       </ViroARImageMarker>
     </ViroARScene>
   );
 }
-
