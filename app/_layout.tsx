@@ -40,8 +40,8 @@ export default function RootLayout() {
         headerTitleAlign: 'center',
       }}>
         <Stack.Screen name="index" options={{title:'Home'}} />
-        <Stack.Screen name="Intrest" options={{title:'Intrest'}} />
-        <Stack.Screen name="+not-found" />
+        {/* <Stack.Screen name="Intrest" options={{title:'Intrest'}} /> */}
+        {/* <Stack.Screen name="+not-found" /> */}
       </Stack>
       <StatusBar
         style='auto'

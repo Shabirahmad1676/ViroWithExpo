@@ -50,7 +50,13 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-router"
+      "expo-router",
+      [
+            "@rnmapbox/maps",
+            {
+              "RNMapboxMapsDownloadToken": "sk.eyJ1Ijoic2hhYmlyMTIzIiwiYSI6ImNtZTE3OWVrdDBhYnAyanF3eHB0OGp4c3cifQ.x8HTtiOOuX7s5IvoZA-Qlg" 
+            }
+          ]
     ],
     "experiments": {
       "typedRoutes": true
