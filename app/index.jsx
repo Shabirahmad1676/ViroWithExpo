@@ -59,25 +59,17 @@
 
 
 
-import React, { useEffect } from 'react';
-import MapboxGL from '@rnmapbox/maps';
-import { View } from 'react-native';
+import React from 'react';
 
-MapboxGL.setAccessToken(process.env.map_api);
+import { View } from 'react-native';
+import Map from '../components/Map';
+
 
 const index = ()=> {
-  useEffect(() => {
-    MapboxGL.setTelemetryEnabled(false);
-  }, []);
-
+ 
   return (
     <View style={{ flex: 1 }}>
-      <MapboxGL.MapView style={{ flex: 1 }}>
-        <MapboxGL.Camera
-          zoomLevel={14}
-          centerCoordinate={[74.3587, 31.5204]} 
-        />
-      </MapboxGL.MapView>
+     <Map/>
     </View>
   );
 }
