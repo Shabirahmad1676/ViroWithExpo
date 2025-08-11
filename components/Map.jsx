@@ -57,8 +57,9 @@ const Map = () => {
 
         logoEnabled={false} // hides the small “Mapbox” logo watermark.
       >
-        {/* Show user location on map */}
-        {/* <MapboxGL.UserLocation visible={true} /> */}
+        {/* Show user location on map, it will show by default a green like circle */} 
+        {/* 
+         */}
 
         {/* Camera follows user */}
         <MapboxGL.Camera
