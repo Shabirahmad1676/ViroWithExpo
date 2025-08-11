@@ -63,13 +63,16 @@ import React from 'react';
 
 import { View } from 'react-native';
 import Map from '../components/Map';
+import CustomMark from '../components/CustomMark';
+
 
 
 const index = ()=> {
  
   return (
     <View style={{ flex: 1 }}>
-     <Map/>
+     {/* <Map/> */}
+     <CustomMark/>
     </View>
   );
 }
