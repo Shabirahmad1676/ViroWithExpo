@@ -3,28 +3,31 @@ import React, { useEffect, useState } from "react";
 import { View, PermissionsAndroid, Platform, StyleSheet } from "react-native";
 import MapboxGL from "@rnmapbox/maps";
 import { useRouter } from "expo-router";
+import {supabase} from '../utils/supabase'
 MapboxGL.setAccessToken(
-  ""
+  "sk.eyJ1Ijoic2hhYmlyMTIzIiwiYSI6ImNtZTJndDJlZzBuZ3IyaXNhZW4xNmJ4bXkifQ.fXf9lCBKWt87GeRCzNcpsA"
 );
 
 const CustomMark = () => {
   const [userCoords, setUserCoords] = useState(null);
-   const router = useRouter();
-  const billboards = [
-    { id: "bb1", coords: [72.0232308, 34.1473818], title: "CocaCola Billboard", description: "Limited time offer on Coke!", },
-    {
-      id: "bb2",
-      coords: [72.02433945831493, 34.14760014202241],
-      title: "Nike Billboard",
-       description: "New Shoes Lunch - 20% off!",
-    },
-    {
-      id: "bb3",
-      coords: [72.02356961147274, 34.14755714632831],
-      title: "KFC Happy 14th Aug",
-      description:'Buy 1 Get 1 Free'
-    },
-  ];
+  const[billboard,setBillboard] = useState([])
+  const router = useRouter();
+
+
+//this is for fetching data from SupaBase
+useEffect(() => {
+  const fetchBillboards = async () => {
+    let { data, error } = await supabase.from("billboarddataformap").select("*");
+    if (error) {
+      console.error(error);
+    } else {
+      setBillboard(data);
+      console.log('From Supabase')
+    }
+  };
+  fetchBillboards();
+}, []);
+
 
   useEffect(() => {
     //to get user permission
@@ -37,10 +40,10 @@ const CustomMark = () => {
 
       // Get user location once
       const location = await MapboxGL.locationManager.getLastKnownLocation();
-      console.log('location=>',location);
+      // console.log('location=>',location);
       if (location?.coords) {
         setUserCoords([location.coords.longitude, location.coords.latitude]);
-        console.log("user locaton=>", userCoords);
+        // console.log("user locaton=>", userCoords);
       }
     };
 
@@ -72,7 +75,7 @@ const CustomMark = () => {
         />
 
         {/*Mapbox marker*/}
-        {billboards.map((b) => (
+        {billboard.map((b) => (
           <MapboxGL.PointAnnotation
             key={b.id}
             id={b.id}
@@ -82,12 +85,17 @@ const CustomMark = () => {
             //   console.log(`New location for ${b.title}:`, coordinates);
             // }}
             coordinate={b.coords}
-            onSelected={() => router.push({ pathname: `/post/${b.id}`, params: b })}
-            onPress={() => console.log(`${b.title} tapped`)}
+            onSelected={() =>
+              router.push({
+                pathname: `/post/${b.id}`,
+                params: b
+              })
+            }
+            // onPress={() => console.log(`${b.title} tapped`)}
           >
             <View style={styles.pin} />
             <MapboxGL.Callout title={b.title} />
-          </MapboxGL.PointAnnotation>
+          </MapboxGL.PointAnnotation> 
         ))}
       </MapboxGL.MapView>
     </View>
