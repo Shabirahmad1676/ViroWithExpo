@@ -1,6 +1,6 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -13,6 +13,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
@@ -41,6 +42,9 @@ export default function RootLayout() {
       }}>
         <Stack.Screen name="index" options={{title:'Home'}} />
         {/* <Stack.Screen name="Intrest" options={{title:'Intrest'}} /> */}
+        <Stack.Screen name="post/[id]" options={({ route }) => ({
+            title: route.params?.title || 'Billboard',
+          })} /> 
         {/* <Stack.Screen name="+not-found" /> */}
       </Stack>
       <StatusBar
