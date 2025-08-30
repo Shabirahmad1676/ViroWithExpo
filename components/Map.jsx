@@ -67,12 +67,12 @@ const Map = () => {
           followUserMode="normal"
           followPitch={45}
           followZoomLevel={18}
-          animationMode="flyTo"
+          // animationMode="flyTo"
           animationDuration={1000}
         />
 
         {/*Mapbox marker*/}
-        <MapboxGL.PointAnnotation
+        {/* <MapboxGL.PointAnnotation
           id="marker-1"
           coordinate={userCoords}
         //   draggable
@@ -80,7 +80,7 @@ const Map = () => {
         >
           <View style={styles.pin} />
           <MapboxGL.Callout title="I am shabir!" />
-        </MapboxGL.PointAnnotation>
+        </MapboxGL.PointAnnotation> */}
       </MapboxGL.MapView>
     </View>
   );

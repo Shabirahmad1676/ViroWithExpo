@@ -40,12 +40,15 @@ export default function RootLayout() {
         },
         headerTitleAlign: 'center',
       }}>
-        <Stack.Screen name="index" options={{title:'Home'}} />
-        {/* <Stack.Screen name="Intrest" options={{title:'Intrest'}} /> */}
-        <Stack.Screen name="post/[id]" options={({ route }) => ({
-            title: route.params?.title || 'Billboard',
+        <Stack.Screen name="(auth)" options={{headerShown:false}} />
+        <Stack.Screen name="Intrest" options={{title:'Intrest'}} />
+        <Stack.Screen name="(tabs)" options={{headerShown:false}} />
+        <Stack.Screen name="PrivacyPolicy" options={{headerShown:false}} />
+         <Stack.Screen name="post/[id]" options={({ route }) => ({
+             title: route.params?.title || 'Billboard', 
           })} /> 
-        {/* <Stack.Screen name="+not-found" /> */}
+        <Stack.Screen name="+not-found" options={{title:'404'}} />
+        <Stack.Screen name="Settings" options={{title:'Settings'}} />
       </Stack>
       <StatusBar
         style='auto'
