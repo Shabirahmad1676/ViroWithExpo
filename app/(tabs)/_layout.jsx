@@ -7,25 +7,16 @@ const _layout = () => {
   return (
     <Tabs
       screenOptions={{
-        headerStyle: {
-          backgroundColor: 'lightblue',
-        },
-        headerTitleStyle:{
-          fontWeight: 'bold',
-          color: 'blue',
-          fontSize: 20,
-          textAlign: 'center',
-        },
-        headerTitleAlign: 'center',
+        headerShown: false,
         tabBarStyle: {
           position: 'absolute',
-          // bottom: 14,
           left: 26,
           right: 26,
+          bottom: 20,
           height: 70,
           backgroundColor: '#ffffff',
           borderRadius: 35,
-          shadowColor: '#000',
+          shadowColor: '#667eea',
           shadowOffset: {
             width: 0,
             height: 4,
@@ -45,8 +36,8 @@ const _layout = () => {
           fontWeight: '600',
           marginTop: 0,
         },
-        tabBarActiveTintColor: '#1ef4d7',
-        tabBarInactiveTintColor: '#8e8e93',
+        tabBarActiveTintColor: '#667eea',
+        tabBarInactiveTintColor: '#999',
         tabBarIconStyle: {
           marginBottom: 2,
         },

@@ -3,30 +3,41 @@ import React, { useEffect, useState } from "react";
 import { View, PermissionsAndroid, Platform, StyleSheet } from "react-native";
 import MapboxGL from "@rnmapbox/maps";
 import { useRouter } from "expo-router";
-import {supabase} from '../utils/supabase'
+import { getMapBillboards } from '../services/apiService';
+import Constants from 'expo-constants';
+
 MapboxGL.setAccessToken(
-  "sk.eyJ1Ijoic2hhYmlyMTIzIiwiYSI6ImNtZTJndDJlZzBuZ3IyaXNhZW4xNmJ4bXkifQ.fXf9lCBKWt87GeRCzNcpsA"
+  Constants.expoConfig?.extra?.mapboxApiKey || "sk.eyJ1Ijoic2hhYmlyMTIzIiwiYSI6ImNtZTJndDJlZzBuZ3IyaXNhZW4xNmJ4bXkifQ.fXf9lCBKWt87GeRCzNcpsA"
 );
 
 const CustomMark = () => {
   const [userCoords, setUserCoords] = useState(null);
-  const[billboard,setBillboard] = useState([])
+  const [billboard, setBillboard] = useState([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-
-//this is for fetching data from SupaBase
-useEffect(() => {
-  const fetchBillboards = async () => {
-    let { data, error } = await supabase.from("billboarddataformap").select("*");
-    if (error) {
-      console.error(error);
-    } else {
-      setBillboard(data);
-      console.log('From Supabase')
-    }
-  };
-  fetchBillboards();
-}, []);
+  // Fetch billboard data for map
+  useEffect(() => {
+    const fetchBillboards = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await getMapBillboards('Mardan');
+        if (error) {
+          console.error('Error fetching map billboards:', error);
+          setBillboard([]);
+        } else {
+          setBillboard(data || []);
+          console.log('Map billboards loaded:', data?.length || 0);
+        }
+      } catch (err) {
+        console.error('Error in fetchBillboards:', err);
+        setBillboard([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBillboards();
+  }, []);
 
 
   useEffect(() => {

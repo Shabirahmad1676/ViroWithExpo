@@ -1,32 +1,47 @@
-import { View, Text, TouchableOpacity, SafeAreaView, StyleSheet, Alert, ActivityIndicator } from "react-native"
+import { View, Text, TouchableOpacity, SafeAreaView, StyleSheet, Alert, ActivityIndicator, ScrollView } from "react-native"
 import { useRouter } from "expo-router"
 import { supabase } from "../../utils/supabase"
 import { Ionicons } from "@expo/vector-icons"
 import 'react-native-url-polyfill/auto'
 import { useState, useEffect } from 'react'
+import { useAuth } from "../../AuthContext/UserAuth"
+import { FadeIn, SlideIn } from "../../components/animations"
+import { ScreenHeader } from "../../components/ScreenHeader"
 
 const Settings = () => {
   const router = useRouter()
-  const [session, setSession] = useState(null)
+  const { user, signOut, loading: authLoading } = useAuth()
   const [userProfile, setUserProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut()
-    if (error) {
-      Alert.alert("Error", "Could not log out")
-    } else {
-      router.replace("/(auth)/LogIn")
-    }
+    Alert.alert(
+      "Sign Out",
+      "Are you sure you want to sign out?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Sign Out",
+          onPress: async () => {
+            const { error } = await signOut()
+            if (error) {
+              Alert.alert("Error", "Could not log out")
+            } else {
+              router.replace("/(auth)/LogIn")
+            }
+          }
+        }
+      ]
+    )
   }
 
   const fetchUserProfile = async (userId) => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('full_name, email')
-        .eq('id', userId)
-        .single()
+      const { getUserProfile } = await import('../../services/apiService')
+      const { data, error } = await getUserProfile(userId)
 
       if (error) {
         console.error('Error fetching user profile:', error)
@@ -41,53 +56,45 @@ const Settings = () => {
   }
 
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        setSession(session)
+    if (!user) {
+      router.replace('/(auth)/LogIn')
+      return
+    }
 
-        if (session) {
-          // Fetch user profile data
-          const profile = await fetchUserProfile(session.user.id)
-          setUserProfile(profile)
-        } else {
-          router.replace('/(auth)/LogIn')
-        }
-      } catch (error) {
-        console.error('Session check error:', error)
-        router.replace('/(auth)/LogIn')
-      }
-
+    const loadProfile = async () => {
+      const profile = await fetchUserProfile(user.id)
+      setUserProfile(profile)
       setLoading(false)
     }
 
-    checkSession()
-
-    // Handle future auth state changes
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session)
-      if (session) {
-        const profile = await fetchUserProfile(session.user.id)
-        setUserProfile(profile)
-      } else {
-        router.replace('/(auth)/LogIn')
-      }
-    })
-
-    return () => {
-      listener.subscription.unsubscribe()
-    }
-  }, [])
+    loadProfile()
+  }, [user])
 
   const menuItems = [
-    { title: "Change Interests", onPress: () => router.push("/Intrest") },
-    { title: "Privacy", onPress: () => router.push("/PrivacyPolicy")},
+    { 
+      title: "Change Interests", 
+      icon: "grid-outline",
+      iconColor: "#667eea",
+      onPress: () => router.push("/Intrest") 
+    },
+    { 
+      title: "Privacy Policy", 
+      icon: "shield-checkmark-outline",
+      iconColor: "#57c3ff",
+      onPress: () => router.push("/PrivacyPolicy")
+    },
+    { 
+      title: "Terms & Conditions", 
+      icon: "document-text-outline",
+      iconColor: "#4ed964",
+      onPress: () => Alert.alert("Coming Soon", "Terms & Conditions will be available soon")
+    },
   ]
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007bff" />
+        <ActivityIndicator size="large" color="#667eea" />
         <Text style={styles.loadingText}>Loading...</Text>
       </View>
     )
@@ -95,45 +102,75 @@ const Settings = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>Settings</Text>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <ScreenHeader
+          title="Settings"
+          subtitle="Manage your preferences"
+          icon="settings-outline"
+          iconColor="#667eea"
+        />
 
-      {/* User Profile Section */}
-      <View style={styles.profileSection}>
-        <View style={styles.avatarContainer}>
-          <Ionicons name="person-circle" size={60} color="#1ef4d7" />
-        </View>
-        <View style={styles.userInfo}>
-          <Text style={styles.userName}>
-            {userProfile?.full_name || session?.user?.email?.split('@')[0] || 'User'}
-          </Text>
-          <Text style={styles.userEmail}>
-            {userProfile?.email || session?.user?.email || 'No email available'}
-          </Text>
-        </View>
-      </View>
+        {/* User Profile Section */}
+        <FadeIn delay={200}>
+          <SlideIn direction="up" delay={200}>
+            <View style={styles.profileSection}>
+              <View style={styles.avatarContainer}>
+                <Ionicons name="person-circle" size={70} color="#667eea" />
+              </View>
+              <View style={styles.userInfo}>
+                <Text style={styles.userName}>
+                  {userProfile?.full_name || user?.email?.split('@')[0] || 'User'}
+                </Text>
+                <View style={styles.emailContainer}>
+                  <Ionicons name="mail" size={14} color="#666" />
+                  <Text style={styles.userEmail}>
+                    {userProfile?.email || user?.email || 'No email available'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </SlideIn>
+        </FadeIn>
 
-      <View style={styles.list}>
-        {menuItems.map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.item}
-            onPress={item.onPress}
-          >
-            <Text style={styles.itemText}>
-              {item.title}
-            </Text>
-            <Ionicons name="chevron-forward" size={20} color="#ccc" />
-          </TouchableOpacity>
-        ))}
-        
-        <TouchableOpacity 
-          onPress={handleLogout} 
-          style={[styles.item, styles.logoutItem]}
-        >
-          <Text style={styles.logoutText}>LogOut</Text>
-          <Ionicons name="log-out-outline" size={24} color="#ff4444" />
-        </TouchableOpacity>
-      </View>
+        {/* Menu Items */}
+        <View style={styles.menuContainer}>
+          {menuItems.map((item, index) => (
+            <FadeIn key={index} delay={300 + index * 100}>
+              <SlideIn direction="up" delay={300 + index * 100}>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={item.onPress}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.iconWrapper, { backgroundColor: `${item.iconColor}20` }]}>
+                    <Ionicons name={item.icon} size={24} color={item.iconColor} />
+                  </View>
+                  <Text style={styles.menuItemText}>{item.title}</Text>
+                  <Ionicons name="chevron-forward" size={20} color="#ccc" />
+                </TouchableOpacity>
+              </SlideIn>
+            </FadeIn>
+          ))}
+        </View>
+
+        {/* Logout Button */}
+        <FadeIn delay={600}>
+          <SlideIn direction="up" delay={600}>
+            <TouchableOpacity
+              onPress={handleLogout}
+              style={styles.logoutButton}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="log-out-outline" size={24} color="#ff4757" />
+              <Text style={styles.logoutText}>Sign Out</Text>
+            </TouchableOpacity>
+          </SlideIn>
+        </FadeIn>
+      </ScrollView>
     </SafeAreaView>
   )
 }
@@ -141,76 +178,119 @@ const Settings = () => {
 export default Settings
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: "#fff", 
-    padding: 20 
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9ff',
+    paddingTop: 70,
   },
-  header: { 
-    fontSize: 24, 
-    fontWeight: "bold", 
-    marginBottom: 20 
+  scrollContent: {
+    padding: 20,
   },
   loadingContainer: {
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center' 
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9ff',
   },
   loadingText: {
-    marginTop: 10,
+    marginTop: 12,
     fontSize: 16,
-    color: '#666'
+    color: '#666',
+    fontWeight: '500',
   },
   profileSection: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 24,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 20,
-    paddingHorizontal: 15,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    marginBottom: 20,
+    shadowColor: '#667eea',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   avatarContainer: {
-    marginRight: 15,
+    marginRight: 16,
   },
   userInfo: {
     flex: 1,
   },
   userName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1a1a2e',
+    marginBottom: 8,
+  },
+  emailContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   userEmail: {
     fontSize: 14,
     color: '#666',
+    marginLeft: 6,
   },
-  list: { 
-    borderTopWidth: 1, 
-    borderColor: "#ddd" 
+  menuContainer: {
+    marginBottom: 24,
   },
-  item: {
+  menuItem: {
+    backgroundColor: '#fff',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 15,
-    paddingHorizontal: 10,
-    borderBottomWidth: 1,
-    borderColor: "#ddd",
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  itemText: { 
-    fontSize: 18, 
-    color: "#333" 
+  iconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
-  logoutItem: {
-    backgroundColor: "#fff5f5",
-    marginTop: 10,
-    borderRadius: 8,
+  menuItemText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a2e',
+  },
+  logoutButton: {
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 18,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#ff4757',
+    marginBottom: 20,
+    shadowColor: '#ff4757',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   logoutText: {
     fontSize: 18,
-    color: "#ff4444",
-    fontWeight: '500'
-  }
+    fontWeight: '700',
+    color: '#ff4757',
+    marginLeft: 12,
+  },
 })

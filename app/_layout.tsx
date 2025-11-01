@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { AuthProvider } from '@/AuthContext/UserAuth';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -29,30 +30,22 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'light' ? DarkTheme : DefaultTheme}>
-      <Stack screenOptions={{
-        headerStyle: {
-          backgroundColor: '#1ef4d7ff',
-        },
-        headerTintColor: '#ddc910ff',
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
-        headerTitleAlign: 'center',
-      }}>
-        <Stack.Screen name="(auth)" options={{headerShown:false}} />
-        <Stack.Screen name="Intrest" options={{title:'Intrest'}} />
-        <Stack.Screen name="(tabs)" options={{headerShown:false}} />
-        <Stack.Screen name="PrivacyPolicy" options={{headerShown:false}} />
-         <Stack.Screen name="post/[id]" options={({ route }) => ({
-             title: route.params?.title || 'Billboard', 
-          })} /> 
-        <Stack.Screen name="+not-found" options={{title:'404'}} />
-        <Stack.Screen name="Settings" options={{title:'Settings'}} />
-      </Stack>
-      <StatusBar
-        style='auto'
-      />
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider value={colorScheme === 'light' ? DarkTheme : DefaultTheme}>
+        <Stack screenOptions={{
+          headerShown: false,
+        }}>
+          <Stack.Screen name="(auth)" options={{headerShown:false}} />
+          <Stack.Screen name="Intrest" options={{headerShown:false}} />
+          <Stack.Screen name="(tabs)" options={{headerShown:false}} />
+          <Stack.Screen name="PrivacyPolicy" options={{headerShown:false}} />
+          <Stack.Screen name="post/[id]" options={{headerShown:false}} />
+          <Stack.Screen name="+not-found" options={{headerShown:false}} />
+        </Stack>
+        <StatusBar
+          style='auto'
+        />
+      </ThemeProvider>
+    </AuthProvider>
   );
 }

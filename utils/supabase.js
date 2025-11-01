@@ -1,13 +1,18 @@
 import 'react-native-url-polyfill/auto'; // Needed for RN support
 import { createClient } from '@supabase/supabase-js';
-import { AppState, Platform} from 'react-native';
+import { AppState, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
+// Get environment variables from Expo Constants
+const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl || process.env.SUPABASE_URL;
+const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey || process.env.SUPABASE_ANON_KEY;
 
-const supabaseUrl = 'https://quonuxvuxwavpuqcbxeb.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF1b251eHZ1eHdhdnB1cWNieGViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyNjgxNTYsImV4cCI6MjA2Njg0NDE1Nn0.3V_xLtXXvWsSihlLePKmO2jGgsuTYIDyTkfzG2l9ObU';
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase environment variables. Please check your .env file or app.config.js');
+}
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey ,{
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: AsyncStorage,
     autoRefreshToken: true,
