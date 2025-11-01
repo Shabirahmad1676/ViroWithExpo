@@ -1,173 +1,149 @@
 import 'react-native-url-polyfill/auto'
 import { useState, useEffect } from 'react'
-import { supabase } from '../../utils/supabase'
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  Button, 
-  ScrollView, 
-  Image, 
-  StyleSheet, 
-  Dimensions,
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
   SafeAreaView,
-  StatusBar
+  StatusBar,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-
-const { width } = Dimensions.get('window')
+import { getTrendingBillboards } from '../../services/apiService'
+import { useAuth } from '../../AuthContext/UserAuth'
+import { AdCard } from '../../components/AdCard'
+import { FadeIn, SlideIn } from '../../components/animations'
 
 export default function App() {
-  const [session, setSession] = useState(null)
-  // const[billboard,setBillboard] = useState([])
-
   const router = useRouter()
-
-  // Mock data for trending ads in Mardan
-  const trendingAds = [
-    {
-      id: 1,
-      title: "KFC Mardan - New Spicy Wings",
-      business: "KFC Mardan",
-      location: "Mardan City Center",
-      image: require('../../assets/kfc.jpg'),
-      rating: 4.5,
-      views: "2.3k",
-      category: "Food & Beverage",
-      discount: "20% OFF",
-      description: "Try our new spicy wings with special Mardan sauce. Limited time offer!"
-    },
-    {
-      id: 2,
-      title: "Nike Store - Sports Collection",
-      business: "Nike Mardan",
-      location: "Mardan Mall",
-      image: require('../../assets/nike.jpg'),
-      rating: 4.8,
-      views: "1.8k",
-      category: "Fashion & Sports",
-      discount: "30% OFF",
-      description: "Latest sports collection with premium quality. Perfect for athletes!"
-    },
-    {
-      id: 3,
-      title: "Coca-Cola Refreshment Zone",
-      business: "Coca-Cola Mardan",
-      location: "Mardan Highway",
-      image: require('../../assets/coca.jpg'),      // image: require('../../assets/coca.jpg'),
-      rating: 4.2,
-      views: "3.1k",
-      category: "Beverages",
-      discount: "Buy 2 Get 1 Free",
-      description: "Stay refreshed with Coca-Cola. Special deals for Mardan residents!"
-    },
-    
-  ]
-
-
-  //this is for fetching data from SupaBase
-// useEffect(() => {
-//   const fetchBillboards = async () => {
-//     let { data, error } = await supabase.from("billboarddataformap").select("*");
-//     if (error) {
-//       console.error(error);
-//     } else {
-//       setBillboard(data);
-//       console.log('From Supabase')
-//     }
-//   };
-//   fetchBillboards();
-// }, []);
-
+  const { user } = useAuth()
+  const [trendingAds, setTrendingAds] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-    })
-
-    supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
+    fetchTrendingAds()
   }, [])
 
-  const LogOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/(auth)/LogIn')
+  const fetchTrendingAds = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const { data, error: apiError } = await getTrendingBillboards('Mardan')
+      
+      if (apiError) {
+        console.error('Error fetching trending ads:', apiError)
+        setError(apiError.message)
+        setTrendingAds([])
+      } else {
+        const formattedData = data?.map(ad => ({
+          ...ad,
+          views: formatViews(ad.views || 0),
+          image: ad.image_url ? { uri: ad.image_url } : require('../../assets/images/icon.png')
+        })) || []
+        setTrendingAds(formattedData)
+      }
+    } catch (err) {
+      console.error('Error in fetchTrendingAds:', err)
+      setError(err.message)
+      setTrendingAds([])
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const renderAdCard = (ad) => (
-    <TouchableOpacity key={ad.id} style={styles.adCard}>
-      <View style={styles.imageContainer}>
-        <Image source={ad.image} style={styles.adImage} />
-        <View style={styles.discountBadge}>
-          <Text style={styles.discountText}>{ad.discount}</Text>
+  const formatViews = (views) => {
+    if (views >= 1000) {
+      return `${(views / 1000).toFixed(1)}k`
+    }
+    return views.toString()
+  }
+
+  const handleViewDetails = async (ad) => {
+    if (ad.id) {
+      const { incrementBillboardViews } = await import('../../services/apiService')
+      await incrementBillboardViews(ad.id)
+    }
+    router.push(`/post/${ad.id}`)
+  }
+
+  const handleSave = (ad) => {
+    console.log('Saved', ad.id)
+  }
+
+  if (loading && trendingAds.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#f8f9ff" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#667eea" />
+          <Text style={styles.loadingText}>Loading trending ads...</Text>
         </View>
-        <View style={styles.categoryBadge}>
-          <Text style={styles.categoryText}>{ad.category}</Text>
-        </View>
-      </View>
-      
-      <View style={styles.adContent}>
-        <View style={styles.adHeader}>
-          <Text style={styles.adTitle} numberOfLines={2}>{ad.title}</Text>
-          <View style={styles.ratingContainer}>
-            <Ionicons name="star" size={16} color="#FFD700" />
-            <Text style={styles.ratingText}>{ad.rating}</Text>
-          </View>
-        </View>
-        
-        <Text style={styles.businessName}>{ad.business}</Text>
-        
-        <View style={styles.locationContainer}>
-          <Ionicons name="location-outline" size={14} color="#666" />
-          <Text style={styles.locationText}>{ad.location}</Text>
-        </View>
-        
-        <Text style={styles.description} numberOfLines={2}>
-          {ad.description}
-        </Text>
-        
-        {/* <View style={styles.adFooter}>
-          <View style={styles.viewsContainer}>
-            <Ionicons name="eye-outline" size={14} color="#666" />
-            <Text style={styles.viewsText}>{ad.views} views</Text>
-          </View> */}
-          
-          {/* Buttons */}
-          <View style={styles.buttonsContainer}>
-          <TouchableOpacity style={styles.viewButton} onPress={() => router.push(`/post/${ad.id}`)}>
-            <Text style={styles.viewButtonText}>View Details</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.SaveButton} onPress={() => console.log("Saved",ad.id)}>
-            <Text style={styles.saveButtonText}>Save</Text>
-          </TouchableOpacity>
-          </View>
-        </View>
-      
-    </TouchableOpacity>
-  )
+      </SafeAreaView>
+    )
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
-      
-      
+      <StatusBar barStyle="dark-content" backgroundColor="#f8f9ff" />
 
-      {/* Trending Section */}
-      <View style={styles.trendingSection}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}> Top Trending Ads</Text>
-          <Text style={styles.sectionSubtitle}>Discover the best deals in Mardan</Text>
+      {/* Header */}
+      <FadeIn duration={600}>
+        <SlideIn direction="down" delay={0}>
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <View>
+                <Text style={styles.headerTitle}>Top Trending</Text>
+                <Text style={styles.headerSubtitle}>Discover the best deals in Mardan</Text>
+              </View>
+              <View style={styles.iconContainer}>
+                <Ionicons name="trending-up" size={28} color="#667eea" />
+              </View>
+            </View>
+          </View>
+        </SlideIn>
+      </FadeIn>
+
+      {/* Content */}
+      {error && (
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle" size={48} color="#ff4757" />
+          <Text style={styles.errorText}>Error loading ads</Text>
+          <Text style={styles.errorSubtext}>Pull down to refresh</Text>
         </View>
-        
-        <ScrollView 
+      )}
+
+      {trendingAds.length === 0 && !loading && !error ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="briefcase-outline" size={80} color="#ccc" />
+          <Text style={styles.emptyText}>No trending ads available</Text>
+          <Text style={styles.emptySubtext}>Check back later for new deals!</Text>
+        </View>
+      ) : (
+        <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={fetchTrendingAds}
+              tintColor="#667eea"
+            />
+          }
         >
-          {trendingAds.map(renderAdCard)}
+          {trendingAds.map((ad, index) => (
+            <AdCard
+              key={ad.id}
+              ad={ad}
+              onPress={handleViewDetails}
+              onSave={handleSave}
+            />
+          ))}
         </ScrollView>
-      </View>
+      )}
     </SafeAreaView>
   )
 }
@@ -175,61 +151,17 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f8f9ff',
+    paddingTop: 70,
   },
   header: {
     backgroundColor: '#fff',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  welcomeText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  userEmail: {
-    fontSize: 14,
-    color: 'black',
-    marginTop: 2,
-  },
-  logoutButton: {
-    backgroundColor: '#dc3545',
-    padding: 10,
-    borderRadius: 8,
-  },
-  trendingSection: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  sectionHeader: {
-    paddingVertical: 20,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
-  },
-  sectionSubtitle: {
-    fontSize: 16,
-    color: '#666',
-  },
-  scrollContent: {
-    paddingBottom: 20,
-  },
-  adCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 24,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    shadowColor: '#667eea',
     shadowOffset: {
       width: 0,
       height: 2,
@@ -237,135 +169,79 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
-    overflow: 'hidden',
   },
-  imageContainer: {
-    position: 'relative',
-    height: 200,
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  adImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  discountBadge: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    backgroundColor: '#ff4757',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  discountText: {
-    color: '#fff',
-    fontSize: 12,
+  headerTitle: {
+    fontSize: 28,
     fontWeight: 'bold',
+    color: '#1a1a2e',
+    marginBottom: 4,
   },
-  categoryBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+  headerSubtitle: {
+    fontSize: 15,
+    color: '#666',
   },
-  categoryText: {
-    color: '#fff',
-    fontSize: 12,
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#f0f0ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scrollContent: {
+    padding: 20,
+    paddingTop: 16,
+    paddingBottom: 40,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
     fontWeight: '500',
   },
-  adContent: {
-    padding: 16,
-  },
-  adHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  adTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+  errorContainer: {
     flex: 1,
-    marginRight: 8,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff3cd',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    padding: 40,
   },
-  ratingText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#856404',
-    marginLeft: 2,
-  },
-  businessName: {
-    fontSize: 16,
+  errorText: {
+    fontSize: 18,
     fontWeight: '600',
-    color: '#007bff',
-    marginBottom: 6,
+    color: '#1a1a2e',
+    marginTop: 16,
   },
-  locationContainer: {
-    flexDirection: 'row',
+  errorSubtext: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 4,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#666',
+    marginTop: 24,
     marginBottom: 8,
   },
-  locationText: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 4,
-  },
-  description: {
-    fontSize: 14,
-    color: '#555',
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  adFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  viewsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  viewsText: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 4,
-  },
-  viewButton: {
-    backgroundColor: '#007bff',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  viewButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  SaveButton:{
-    backgroundColor: '#28a745',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  buttonsContainer: {
-    flexDirection: 'row',
-    gap: 10,
+  emptySubtext: {
+    fontSize: 16,
+    color: '#999',
+    textAlign: 'center',
   },
 })

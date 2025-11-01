@@ -1,93 +1,85 @@
-import { View, Text, ScrollView, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity, Image, ActivityIndicator } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { getBillboardById, incrementBillboardViews } from '../../services/apiService'
 
 const BillBoardDetailsScreen = () => {
   const { id } = useLocalSearchParams()
   const router = useRouter()
   const [adData, setAdData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  // Mock data - replace with your actual data source
-  const mockAdsData = {
-    1: {
-      id: 1,
-      title: "KFC Mardan - New Spicy Wings",
-      business: "KFC Mardan",
-      location: "Mardan City Center",
-      image: require('../../assets/kfc.jpg'),
-      rating: 4.5,
-      views: "2.3k",
-      category: "Food & Beverage",
-      discount: "20% OFF",
-      description: "Try our new spicy wings with special Mardan sauce. Limited time offer!",
-      fullDescription: "Experience the perfect blend of spices in our new spicy wings. Made with locally sourced ingredients and our signature Mardan sauce. This limited-time offer includes free fries and a soft drink with every order. Perfect for family gatherings and casual dining.",
-      contact: "+92 300 1234567",
-      address: "Shop #15, Mardan City Center, Main Market Road",
-      hours: "10:00 AM - 11:00 PM",
-      features: ["Free WiFi", "Parking Available", "Delivery Service", "Family Friendly"]
-    },
-    2: {
-      id: 2,
-      title: "Nike Store - Sports Collection",
-      business: "Nike Mardan",
-      location: "Mardan Mall",
-      image: require('../../assets/nike.jpg'),
-      rating: 4.8,
-      views: "1.8k",
-      category: "Fashion & Sports",
-      discount: "30% OFF",
-      description: "Latest sports collection with premium quality. Perfect for athletes!",
-      fullDescription: "Discover the latest Nike sports collection featuring premium quality athletic wear and footwear. From running shoes to training gear, we have everything you need to perform at your best. Our collection includes both men's and women's apparel with the latest technology and comfort features.",
-      contact: "+92 300 7654321",
-      address: "Level 2, Mardan Mall, GT Road",
-      hours: "9:00 AM - 10:00 PM",
-      features: ["Premium Quality", "Latest Collection", "Size Exchange", "Athlete Discount"]
-    },
-    3: {
-      id: 3,
-      title: "Coca-Cola Refreshment Zone",
-      business: "Coca-Cola Mardan",
-      location: "Mardan Highway",
-      image: require('../../assets/coca.jpg'),
-      rating: 4.2,
-      views: "3.1k",
-      category: "Beverages",
-      discount: "Buy 2 Get 1 Free",
-      description: "Stay refreshed with Coca-Cola. Special deals for Mardan residents!",
-      fullDescription: "Quench your thirst with the world's favorite beverage. Our Coca-Cola Refreshment Zone offers a variety of soft drinks, juices, and snacks. Perfect for travelers and locals alike. Enjoy our special 'Buy 2 Get 1 Free' offer on all Coca-Cola products.",
-      contact: "+92 300 9876543",
-      address: "Mardan Highway, Near Bus Stand",
-      hours: "8:00 AM - 12:00 AM",
-      features: ["24/7 Service", "Drive-Thru", "Cold Beverages", "Snacks Available"]
+  useEffect(() => {
+    if (id) {
+      fetchBillboardDetails()
+    }
+  }, [id])
+
+  const fetchBillboardDetails = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      // Fetch billboard data
+      const { data, error: fetchError } = await getBillboardById(id)
+      
+      if (fetchError) {
+        console.error('Error fetching billboard:', fetchError)
+        setError(fetchError.message)
+        setAdData(null)
+      } else if (data) {
+        // Format the data for display
+        const formattedData = {
+          ...data,
+          views: formatViews(data.views || 0),
+          image: data.image_url ? { uri: data.image_url } : require('../../assets/images/icon.png'),
+          fullDescription: data.full_description || data.description,
+          contact: data.phone_no || data.contact,
+          features: data.features || []
+        }
+        setAdData(formattedData)
+        
+        // Increment views when viewing details
+        await incrementBillboardViews(id)
+      } else {
+        setError('Billboard not found')
+        setAdData(null)
+      }
+    } catch (err) {
+      console.error('Error in fetchBillboardDetails:', err)
+      setError(err.message)
+      setAdData(null)
+    } finally {
+      setLoading(false)
     }
   }
 
-  useEffect(() => {
-    // Simulate data fetching
-    setTimeout(() => {
-      const data = mockAdsData[id]
-      setAdData(data)
-      setLoading(false)
-    }, 500)
-  }, [id])
+  const formatViews = (views) => {
+    if (views >= 1000) {
+      return `${(views / 1000).toFixed(1)}k`
+    }
+    return views.toString()
+  }
 
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007bff" />
           <Text style={styles.loadingText}>Loading...</Text>
         </View>
       </SafeAreaView>
     )
   }
 
-  if (!adData) {
+  if (!adData || error) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Ad not found</Text>
+          <Ionicons name="alert-circle-outline" size={64} color="#dc3545" />
+          <Text style={styles.errorText}>{error || 'Ad not found'}</Text>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backButtonText}>Go Back</Text>
           </TouchableOpacity>
@@ -103,8 +95,19 @@ const BillBoardDetailsScreen = () => {
       <ScrollView style={styles.scrollView}>
         {/* Header Image */}
         <View style={styles.imageContainer}>
-          <Text style={styles.discountBadge}>{adData.discount}</Text>
-          <Text style={styles.categoryBadge}>{adData.category}</Text>
+          {adData.image && (
+            <Image 
+              source={adData.image} 
+              style={styles.headerImage}
+              resizeMode="cover"
+            />
+          )}
+          {adData.discount && (
+            <Text style={styles.discountBadge}>{adData.discount}</Text>
+          )}
+          {adData.category && (
+            <Text style={styles.categoryBadge}>{adData.category}</Text>
+          )}
         </View>
 
         {/* Content */}
@@ -190,16 +193,20 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 18,
     color: '#666',
+    marginTop: 10,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 40,
   },
   errorText: {
     fontSize: 18,
-    color: '#666',
+    color: '#dc3545',
+    marginTop: 16,
     marginBottom: 20,
+    textAlign: 'center',
   },
   backButton: {
     backgroundColor: '#007bff',
@@ -221,6 +228,11 @@ const styles = StyleSheet.create({
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  headerImage: {
+    width: '100%',
+    height: '100%',
   },
   discountBadge: {
     position: 'absolute',

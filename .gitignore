@@ -9,6 +9,13 @@ dist/
 web-build/
 expo-env.d.ts
 
+# Environment variables - KEEP SENSITIVE DATA SAFE!
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
 # Native
 *.orig.*
 *.jks
@@ -28,9 +35,6 @@ yarn-error.*
 # macOS
 .DS_Store
 *.pem
-
-# local env files
-.env*.local
 
 # typescript
 *.tsbuildinfo
@@ -51,6 +55,13 @@ dist/
 web-build/
 expo-env.d.ts
 
+# Environment variables - KEEP SENSITIVE DATA SAFE!
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
 # Native
 *.orig.*
 *.jks
@@ -70,9 +81,6 @@ yarn-error.*
 # macOS
 .DS_Store
 *.pem
-
-# local env files
-.env*.local
 
 # typescript
 *.tsbuildinfo

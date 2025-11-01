@@ -4,12 +4,10 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
   SafeAreaView,
-  StatusBar,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { FontAwesome } from '@expo/vector-icons';
+import { ScreenHeader } from '../components/ScreenHeader';
 
 const PrivacyPolicy = () => {
   const router = useRouter();
@@ -20,18 +18,13 @@ const PrivacyPolicy = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* <StatusBar barStyle="dark-content" backgroundColor="#ffffff" /> */}
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <FontAwesome name="arrow-left" size={20} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Privacy Policy</Text>
-        <View style={styles.placeholder} />
-      </View>
-
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScreenHeader
+          title="Privacy Policy"
+          showBack={true}
+          onBack={handleBack}
+          variant="simple"
+        />
         <View style={styles.content}>
           
           {/* Last Updated */}
@@ -186,30 +179,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-  },
-  header: {
-    marginTop: 40,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    backgroundColor: '#ffffff',
-  },
-  backButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: '#f8f9fa',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  placeholder: {
-    width: 36,
   },
   scrollView: {
     flex: 1,

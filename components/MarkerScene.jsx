@@ -7,9 +7,11 @@ import {
   ViroText,
 } from "@reactvision/react-viro";
 import { Linking } from "react-native";
-import { supabase } from "../utils/supabase";
+import { getBillboardByMarkerId, checkIfFavorite, addToFavorites } from "../services/apiService";
+import { useAuth } from "../AuthContext/UserAuth";
 
 export default function MarkerScene() {
+  const { user } = useAuth();
   const [markerVisible, setMarkerVisible] = useState(false);
   const [targetsLoaded, setTargetsLoaded] = useState(false);
   const [billboardData, setBillboardData] = useState(null);
@@ -27,54 +29,52 @@ export default function MarkerScene() {
     setTimeout(() => setTargetsLoaded(true), 100);
   }, []);
 
-  //   Fetch billboard data when marker is found from supabase
+  // Fetch billboard data when marker is found
   const fetchBillboard = async () => {
-    const { data, error } = await supabase
-      .from("billboards")
-      .select("*")
-      .eq("marker_id", "logoMarker")
-      .single();
-
-    if (error) {
-      console.error("Error fetching billboard:", error.message);
-    } else {
-      setBillboardData(data);
-      checkIfSaved(data.marker_id);
-      console.log(" Billboard loaded:", data);
-    }``
+    try {
+      const { data, error } = await getBillboardByMarkerId("logoMarker");
+      
+      if (error) {
+        console.error("Error fetching billboard:", error.message);
+      } else {
+        setBillboardData(data);
+        if (user) {
+          await checkFavoriteStatus(data.marker_id);
+        }
+        console.log("Billboard loaded:", data);
+      }
+    } catch (err) {
+      console.error("Error in fetchBillboard:", err);
+    }
   };
 
-  const checkIfSaved = async (markerId) => {
-  const { data, error } = await supabase
-    .from("favorites")
-    .select("*")
-    // .eq("user_id", userId)
-    .eq("marker_id", markerId)
-    .single();
-
-  if (data) setIsSaved(true);
-};
-
-
-  // checkIfSaved(session.user.id, data.marker_id);
-
-
+  const checkFavoriteStatus = async (markerId) => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await checkIfFavorite(user.id, markerId);
+      if (!error && data) {
+        setIsSaved(true);
+      }
+    } catch (err) {
+      console.error("Error checking favorite status:", err);
+    }
+  };
 
   const saveToFavorites = async () => {
-    // if (!session?.user?.id || !billboardData) return;
+    if (!user || !billboardData) return;
 
-    const { error } = await supabase.from("favorites").insert([
-      {
-        // user_id: session.user.id, //it is for Auth users , now i am doing without auth
-        marker_id: billboardData.marker_id,
-      },
-    ]);
-
-    if (!error) {
-      setIsSaved(true);
-      console.log(" Billboard saved to favorites");
-    } else {
-      console.error(" Failed to save favorite:", error.message);
+    try {
+      const { error } = await addToFavorites(user.id, billboardData.id, billboardData.marker_id);
+      
+      if (!error) {
+        setIsSaved(true);
+        console.log("Billboard saved to favorites");
+      } else {
+        console.error("Failed to save favorite:", error.message);
+      }
+    } catch (err) {
+      console.error("Error in saveToFavorites:", err);
     }
   };
 
