@@ -28,7 +28,16 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      console.log('AuthContext: Initial session check completed')
+      if (error) {
+        console.error('AuthContext: getSession error:', error)
+      }
+      if (session) {
+        console.log('AuthContext: Session found for user:', session.user.email)
+      } else {
+        console.log('AuthContext: No session found (getSession returned null)')
+      }
       setSession(session);
       setUser(session?.user ?? null);
       setInitialLoading(false);
@@ -38,6 +47,7 @@ export const AuthProvider = ({ children }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('AuthContext: onAuthStateChange event:', _event, session ? 'Session Active' : 'No Session')
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);

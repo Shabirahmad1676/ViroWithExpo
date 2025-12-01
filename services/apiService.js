@@ -76,7 +76,7 @@ export const getBillboardById = async (id) => {
       .select('*')
       .eq('id', id)
       .eq('is_active', true)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error fetching billboard by ID:', error);
@@ -102,7 +102,8 @@ export const getBillboardByMarkerId = async (markerId) => {
       .select('*')
       .eq('marker_id', markerId)
       .eq('is_active', true)
-      .single();
+      .eq('is_active', true)
+      .maybeSingle();
 
     if (error) {
       console.error('Error fetching billboard by marker ID:', error);
@@ -128,10 +129,11 @@ export const incrementBillboardViews = async (id) => {
       .from('billboards')
       .select('views')
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
     if (!current) {
-      throw new Error('Billboard not found');
+      console.log('Billboard not found for incrementing views:', id);
+      return { data: null, error: null }; // Graceful exit
     }
 
     // Increment views
@@ -140,7 +142,7 @@ export const incrementBillboardViews = async (id) => {
       .update({ views: current.views + 1 })
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error incrementing views:', error);
@@ -265,7 +267,7 @@ export const saveUserInterests = async (userId, interests) => {
       // Update existing
       const { data, error } = await supabase
         .from('user_interests')
-        .update({ 
+        .update({
           interests,
           updated_at: new Date().toISOString()
         })
@@ -312,7 +314,7 @@ export const getUserFavorites = async (userId) => {
       .from('favorites')
       .select(`
         *,
-        billboards (*)
+        billboards:billboards!favorites_billboard_id_fkey (*)
       `)
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
@@ -546,25 +548,25 @@ export default {
   getBillboardById,
   getBillboardByMarkerId,
   incrementBillboardViews,
-  
+
   // Map
   getMapBillboards,
-  
+
   // Interests
   getAllInterests,
   getUserInterests,
   saveUserInterests,
-  
+
   // Favorites
   getUserFavorites,
   checkIfFavorite,
   addToFavorites,
   removeFromFavorites,
-  
+
   // Profile
   getUserProfile,
   updateUserProfile,
-  
+
   // Search
   searchBillboards,
   getBillboardsByCategory,

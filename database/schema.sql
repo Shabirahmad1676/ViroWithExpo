@@ -287,7 +287,7 @@ CREATE TRIGGER on_auth_user_created
 -- ============================================
 -- Insert sample billboards for Mardan (adjust coordinates as needed)
 INSERT INTO billboards (
-  marker_id, title, description, full_description, business, category,
+  marker_id, title, description, full_description, business, category,image_url,
   location, address, latitude, longitude, rating, views, discount,
   contact, phone_no, web_url, hours, features, is_trending, city
 ) VALUES
@@ -298,6 +298,7 @@ INSERT INTO billboards (
   'Experience the perfect blend of spices in our new spicy wings. Made with locally sourced ingredients and our signature Mardan sauce. This limited-time offer includes free fries and a soft drink with every order. Perfect for family gatherings and casual dining.',
   'KFC Mardan',
   'Food & Beverage',
+  'https://unsplash.com/photos/a-red-can-of-soda-OWyCbCn28Hg',
   'Mardan City Center',
   'Shop #15, Mardan City Center, Main Market Road',
   34.1980, 72.0350,

@@ -42,7 +42,7 @@ export default function App() {
         const formattedData = data?.map(ad => ({
           ...ad,
           views: formatViews(ad.views || 0),
-          image: ad.image_url ? { uri: ad.image_url } : require('../../assets/images/icon.png')
+          image: ad.image_url ? { uri: ad.image_url } : require('../../assets/coca.jpg')
         })) || []
         setTrendingAds(formattedData)
       }

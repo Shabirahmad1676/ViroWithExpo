@@ -4,11 +4,64 @@ import { Ionicons } from '@expo/vector-icons'
 import { FadeIn, SlideIn } from '../../components/animations'
 import { ScreenHeader } from '../../components/ScreenHeader'
 
+import { useFocusEffect } from 'expo-router'
+import { getUserFavorites, removeFromFavorites } from '../../services/apiService'
+import { useAuth } from '../../AuthContext/UserAuth'
+
 const Saved = () => {
   const [savedItems, setSavedItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const { user } = useAuth()
 
-  const handleUnsave = (itemId) => {
-    setSavedItems(savedItems.filter(item => item.id !== itemId))
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user) {
+        fetchFavorites()
+      } else {
+        setSavedItems([])
+        setLoading(false)
+      }
+    }, [user])
+  )
+
+  const fetchFavorites = async () => {
+    try {
+      setLoading(true)
+      const { data, error } = await getUserFavorites(user.id)
+      if (error) {
+        console.error('Error fetching favorites:', error)
+      } else {
+        // Transform data to match UI expectations
+        // The API returns favorites with joined billboards data
+        const formattedItems = data.map(item => ({
+          id: item.billboards.id,
+          title: item.billboards.title,
+          category: item.billboards.category,
+          image: item.billboards.image_url ? { uri: item.billboards.image_url } : require('../../assets/coca.jpg'),
+        }))
+        setSavedItems(formattedItems)
+      }
+    } catch (err) {
+      console.error('Error in fetchFavorites:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleUnsave = async (itemId) => {
+    try {
+      // Optimistic update
+      setSavedItems(prev => prev.filter(item => item.id !== itemId))
+
+      const { error } = await removeFromFavorites(user.id, itemId)
+      if (error) {
+        console.error('Error removing favorite:', error)
+        // Revert if failed (optional, but good practice)
+        fetchFavorites()
+      }
+    } catch (err) {
+      console.error('Error in handleUnsave:', err)
+    }
   }
 
   return (

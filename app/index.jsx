@@ -18,18 +18,23 @@ export default function App() {
   useEffect(() => {
     // Wait for both initial loading to complete AND component to be mounted
     if (!initialLoading && !loading && mounted) {
+      console.log('App: Auth check running. User:', user ? user.email : 'No user', 'InitialLoading:', initialLoading, 'Loading:', loading)
       // Use setTimeout to ensure router is ready
       const timer = setTimeout(() => {
         if (user) {
+          console.log('App: User logged in, checking interests...')
           // User is logged in, check if they have interests
           checkUserInterests()
         } else {
+          console.log('App: No user, redirecting to Login')
           // Not logged in → go to login
           router.replace('/(auth)/LogIn')
         }
       }, 100) // Small delay to ensure router is ready
 
       return () => clearTimeout(timer)
+    } else {
+      console.log('App: Waiting for auth/mount. User:', user ? 'Yes' : 'No', 'InitLoad:', initialLoading, 'Load:', loading, 'Mounted:', mounted)
     }
   }, [user, loading, initialLoading, mounted])
 
