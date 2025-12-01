@@ -102,11 +102,16 @@ GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ### 4. Configure Supabase
 
 1. Create a Supabase project at [supabase.com](https://supabase.com)
-2. Create the following tables:
-   - `billboards`: Store billboard information
-   - `favorites`: User saved locations
-   - `users`: User profiles
-3. Set up Row Level Security (RLS) policies
+2. Run the SQL scripts located in the `database/` directory in your Supabase SQL Editor:
+   - First, run `database/schema.sql` to set up tables and security policies.
+   - Run `database/fix_views_policy.sql` if you encounter issues with view permissions.
+3. The schema includes tables for:
+   - `users`: Extended user profiles
+   - `billboards`: AR content management
+   - `campaigns`: Advertising campaigns
+   - `ad_interactions`: Analytics tracking
+   - `user_interests`: Personalization data
+   - `saved_places`: User bookmarks
 
 ### 5. Run the Application
 
@@ -155,36 +160,47 @@ ViroWithExpo/
 │   ├── (tabs)/                   # Main tab navigation
 │   │   ├── _layout.jsx          # Tab layout
 │   │   ├── index.jsx            # Home/Discover feed
-│   │   ├── MapScreen.jsx        # Map view
-│   │   ├── Camera.jsx           # AR Camera
+│   │   ├── MapScreen.jsx        # Map view with Custom Markers
+│   │   ├── Camera.jsx           # AR Camera Experience
 │   │   ├── Saved.jsx            # Saved places
-│   │   └── Settings.jsx         # User settings
+│   │   ├── Settings.jsx         # User settings
 │   ├── post/
 │   │   └── [id].jsx             # Dynamic post details
-│   ├── Intrest.jsx              # Interest selection
+│   ├── Intrest.jsx              # Interest selection for personalization
 │   ├── PrivacyPolicy.jsx        # Privacy policy
+│   ├── index.jsx                # Entry point (Auth & Interest Check)
 │   └── +not-found.tsx           # 404 page
 ├── components/                   # Reusable components
-│   ├── AR/                      # AR components
+│   ├── AR/                      # AR components (ViroReact)
 │   │   ├── HelloAR.jsx         # Basic AR scene
 │   │   ├── MarkerScene.jsx     # AR marker detection
 │   │   ├── Object3d.jsx        # 3D objects
 │   │   ├── ViroARImageMarker.jsx # Image markers
-│   │   └── BusinessCardARScene.js # Business AR
+│   │   ├── BusinessCardARScene.js # Business AR
+│   │   └── BodyExplorerScene.jsx # Interactive Body Explorer
 │   ├── Map/                     # Map components
 │   │   ├── Map.jsx             # Map container
 │   │   └── CustomMark.jsx      # Custom markers
+│   ├── ui/                      # UI components (ThemedText, ThemedView, etc.)
+│   ├── animations/              # Lottie animations
 │   ├── BillBoardCard.jsx       # Billboard display
-│   └── ui/                      # UI components
+│   └── AdCard.jsx              # Advertisement display
 ├── AuthContext/                 # Auth state management
 │   └── UserAuth.js
 ├── utils/                       # Utility functions
 │   └── supabase.js             # Supabase client
+├── services/                    # API services
+│   └── apiService.js           # Backend interactions
+├── database/                    # SQL Schemas
+│   ├── schema.sql              # Main database schema
+│   └── fix_views_policy.sql    # RLS policy fixes
 ├── constants/                   # App constants
 │   └── Colors.ts               # Color scheme
 ├── hooks/                       # Custom React hooks
 │   ├── useColorScheme.ts
-│   └── useThemeColor.ts
+│   ├── useThemeColor.ts
+│   ├── useGeoARMessages.ts     # Geo-based AR messages
+│   └── useAsyncMessage.ts      # Async message handling
 ├── assets/                      # Images, fonts, markers
 │   ├── images/                 # App images
 │   └── fonts/                  # Custom fonts
@@ -201,6 +217,11 @@ The app uses ViroReact's image tracking to detect printed markers:
 1. Scan a registered marker image with your camera
 2. AR content (3D models, videos, info) appears over the marker
 3. Interact with AR elements (tap, drag, rotate)
+
+### Interest-Based Personalization
+- New users select interests upon first login
+- Content in the "Discover" feed is tailored to these interests
+- Managed via `Intrest.jsx` and `user_interests` table
 
 ### Billboard Management
 - Businesses create billboard entries in Supabase
