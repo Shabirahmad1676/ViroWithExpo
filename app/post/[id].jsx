@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity, Image, ActivityIndicator, Dimensions, Platform } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity, Image, ActivityIndicator, Dimensions, Platform, Linking } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -101,6 +101,40 @@ const BillBoardDetailsScreen = () => {
     return views.toString()
   }
 
+  const handleCall = () => {
+    if (adData?.contact) {
+      Linking.openURL(`tel:${adData.contact}`);
+    } else {
+      alert("No contact number available");
+    }
+  };
+
+  const handleDirections = () => {
+    // Use adData.latitude/longitude if available, otherwise fallback to query
+    if (adData?.latitude && adData?.longitude) {
+      const scheme = Platform.select({ ios: 'maps:', android: 'geo:' });
+      const latLng = `${adData.latitude},${adData.longitude}`;
+      const label = adData.title || 'Location';
+      const url = Platform.select({
+        ios: `${scheme}?q=${label}&ll=${latLng}`,
+        android: `${scheme}?q=${latLng}(${label})`
+      });
+      Linking.openURL(url);
+    } else {
+      // Fallback to searching by location text
+      const query = adData?.location || adData?.address;
+      if (query) {
+        const url = Platform.select({
+          ios: `maps:?q=${query}`,
+          android: `geo:0,0?q=${query}`
+        });
+        Linking.openURL(url);
+      } else {
+        alert("Location coordinates not found");
+      }
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -198,11 +232,11 @@ const BillBoardDetailsScreen = () => {
 
           {/* Action Buttons */}
           <View style={styles.actionButtonsRow}>
-            <TouchableOpacity style={styles.primaryButton}>
+            <TouchableOpacity style={styles.primaryButton} onPress={handleCall}>
               <Ionicons name="call" size={20} color="#fff" />
               <Text style={styles.primaryButtonText}>Call Now</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.secondaryButton}>
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleDirections}>
               <Ionicons name="navigate" size={20} color="#667eea" />
               <Text style={styles.secondaryButtonText}>Directions</Text>
             </TouchableOpacity>
