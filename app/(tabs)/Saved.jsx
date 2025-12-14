@@ -1,48 +1,62 @@
-import { View, Text, TouchableOpacity, SafeAreaView, StyleSheet, ScrollView, Image } from 'react-native'
+import { View, Text, TouchableOpacity, SafeAreaView, StyleSheet, ScrollView, Image, ActivityIndicator } from 'react-native'
 import React, { useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { FadeIn, SlideIn } from '../../components/animations'
 import { ScreenHeader } from '../../components/ScreenHeader'
+import CouponCard from '../../components/CouponCard'
 
 import { useFocusEffect } from 'expo-router'
-import { getUserFavorites, removeFromFavorites } from '../../services/apiService'
+import { getUserFavorites, removeFromFavorites, getUserCoupons } from '../../services/apiService'
 import { useAuth } from '../../AuthContext/UserAuth'
 
 const Saved = () => {
+  const [activeTab, setActiveTab] = useState('saved'); // 'saved' or 'coupons'
   const [savedItems, setSavedItems] = useState([])
+  const [coupons, setCoupons] = useState([])
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
 
   useFocusEffect(
     React.useCallback(() => {
       if (user) {
-        fetchFavorites()
+        fetchData()
       } else {
         setSavedItems([])
+        setCoupons([])
         setLoading(false)
       }
-    }, [user])
+    }, [user, activeTab])
   )
 
-  const fetchFavorites = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true)
-      const { data, error } = await getUserFavorites(user.id)
-      if (error) {
-        console.error('Error fetching favorites:', error)
+
+      if (activeTab === 'saved') {
+        const { data, error } = await getUserFavorites(user.id)
+        if (error) {
+          console.error('Error fetching favorites:', error)
+          setSavedItems([])
+        } else {
+          const formattedItems = data.map(item => ({
+            id: item.billboards.id,
+            title: item.billboards.title,
+            category: item.billboards.category,
+            image: item.billboards.image_url ? { uri: item.billboards.image_url } : require('../../assets/coca.jpg'),
+          }))
+          setSavedItems(formattedItems)
+        }
       } else {
-        // Transform data to match UI expectations
-        // The API returns favorites with joined billboards data
-        const formattedItems = data.map(item => ({
-          id: item.billboards.id,
-          title: item.billboards.title,
-          category: item.billboards.category,
-          image: item.billboards.image_url ? { uri: item.billboards.image_url } : require('../../assets/coca.jpg'),
-        }))
-        setSavedItems(formattedItems)
+        const { data, error } = await getUserCoupons(user.id)
+        if (error) {
+          console.error('Error fetching coupons:', error);
+          setCoupons([])
+        } else {
+          setCoupons(data || [])
+        }
       }
     } catch (err) {
-      console.error('Error in fetchFavorites:', err)
+      console.error('Error in fetchData:', err)
     } finally {
       setLoading(false)
     }
@@ -50,15 +64,9 @@ const Saved = () => {
 
   const handleUnsave = async (itemId) => {
     try {
-      // Optimistic update
       setSavedItems(prev => prev.filter(item => item.id !== itemId))
-
       const { error } = await removeFromFavorites(user.id, itemId)
-      if (error) {
-        console.error('Error removing favorite:', error)
-        // Revert if failed (optional, but good practice)
-        fetchFavorites()
-      }
+      if (error) fetchFavorites() // Revert if failed
     } catch (err) {
       console.error('Error in handleUnsave:', err)
     }
@@ -72,74 +80,111 @@ const Saved = () => {
       >
         {/* Header */}
         <ScreenHeader
-          title="Saved Items"
-          subtitle="Your favorite billboards"
-          icon="bookmark-outline"
+          title="My Wallet"
+          subtitle="Saved items & Coupons"
+          icon="wallet-outline"
           iconColor="#667eea"
         />
 
-        {/* Content */}
-        {savedItems.length === 0 ? (
-          <FadeIn delay={200}>
-            <SlideIn direction="up" delay={200}>
-              <View style={styles.emptyContainer}>
-                <View style={styles.emptyIconContainer}>
-                  <Ionicons name="bookmark-outline" size={80} color="#e0e0e0" />
-                </View>
-                <Text style={styles.emptyTitle}>No Saved Items</Text>
-                <Text style={styles.emptySubtext}>
-                  Start saving your favorite billboards to see them here
-                </Text>
-                <TouchableOpacity style={styles.exploreButton}>
-                  <Ionicons name="search" size={20} color="#fff" />
-                  <Text style={styles.exploreButtonText}>Explore Now</Text>
-                </TouchableOpacity>
-              </View>
-            </SlideIn>
-          </FadeIn>
-        ) : (
-          <View style={styles.savedItemsContainer}>
-            {savedItems.map((item, index) => (
-              <FadeIn key={item.id} delay={200 + index * 100}>
-                <SlideIn direction="up" delay={200 + index * 100}>
-                  <View style={styles.savedItem}>
-                    <Image source={item.image} style={styles.savedItemImage} />
-                    <View style={styles.savedItemContent}>
-                      <Text style={styles.savedItemTitle} numberOfLines={2}>
-                        {item.title}
-                      </Text>
-                      <Text style={styles.savedItemCategory}>{item.category}</Text>
-                    </View>
-                    <TouchableOpacity
-                      style={styles.unsaveButton}
-                      onPress={() => handleUnsave(item.id)}
-                    >
-                      <Ionicons name="bookmark" size={24} color="#ff4757" />
-                    </TouchableOpacity>
-                  </View>
-                </SlideIn>
-              </FadeIn>
-            ))}
-          </View>
-        )}
+        {/* Custom Segmented Control */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'saved' && styles.activeTab]}
+            onPress={() => setActiveTab('saved')}
+          >
+            <Text style={[styles.tabText, activeTab === 'saved' && styles.activeTabText]}>Saved Ads</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'coupons' && styles.activeTab]}
+            onPress={() => setActiveTab('coupons')}
+          >
+            <Text style={[styles.tabText, activeTab === 'coupons' && styles.activeTabText]}>My Coupons</Text>
+          </TouchableOpacity>
+        </View>
 
-        {/* Tips Section */}
-        {savedItems.length > 0 && (
-          <FadeIn delay={400}>
-            <SlideIn direction="up" delay={400}>
-              <View style={styles.tipsContainer}>
-                <Ionicons name="information-circle" size={24} color="#667eea" />
-                <Text style={styles.tipsText}>
-                  Tap the bookmark icon to remove items from your saved list
-                </Text>
-              </View>
-            </SlideIn>
-          </FadeIn>
+        {loading ? (
+          <ActivityIndicator size="large" color="#667eea" style={{ marginTop: 50 }} />
+        ) : (
+          <>
+            {/* SAVED TAB CONTENT */}
+            {activeTab === 'saved' && (
+              savedItems.length === 0 ? (
+                <EmptyState
+                  icon="bookmark-outline"
+                  title="No Saved Items"
+                  message="Start saving your favorite billboards to see them here"
+                />
+              ) : (
+                <View style={styles.itemsContainer}>
+                  {savedItems.map((item, index) => (
+                    <FadeIn key={item.id} delay={100 + index * 100}>
+                      <View style={styles.savedItem}>
+                        <Image source={item.image} style={styles.savedItemImage} />
+                        <View style={styles.savedItemContent}>
+                          <Text style={styles.savedItemTitle} numberOfLines={2}>
+                            {item.title}
+                          </Text>
+                          <Text style={styles.savedItemCategory}>{item.category}</Text>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.unsaveButton}
+                          onPress={() => handleUnsave(item.id)}
+                        >
+                          <Ionicons name="bookmark" size={24} color="#ff4757" />
+                        </TouchableOpacity>
+                      </View>
+                    </FadeIn>
+                  ))}
+                </View>
+              )
+            )}
+
+            {/* COUPONS TAB CONTENT */}
+            {activeTab === 'coupons' && (
+              coupons.length === 0 ? (
+                <EmptyState
+                  icon="pricetag-outline"
+                  title="No Coupons Yet"
+                  message="Visit AR billboards to find and collect exclusive coupons!"
+                />
+              ) : (
+                <View style={styles.itemsContainer}>
+                  {coupons.map((userCoupon, index) => (
+                    <CouponCard
+                      key={userCoupon.id}
+                      title={userCoupon.coupons.title}
+                      discountAmount={userCoupon.coupons.discount_amount}
+                      discountCode={userCoupon.coupons.discount_code}
+                      expiryDate={userCoupon.coupons.valid_until || Date.now() + 86400000 * 30} // Fallback 30 days
+                    />
+                  ))}
+                </View>
+              )
+            )}
+          </>
         )}
       </ScrollView>
     </SafeAreaView>
   )
 }
+
+const EmptyState = ({ icon, title, message }) => (
+  <FadeIn delay={200}>
+    <SlideIn direction="up" delay={200}>
+      <View style={styles.emptyContainer}>
+        <View style={styles.emptyIconContainer}>
+          <Ionicons name={icon} size={80} color="#e0e0e0" />
+        </View>
+        <Text style={styles.emptyTitle}>{title}</Text>
+        <Text style={styles.emptySubtext}>{message}</Text>
+        <TouchableOpacity style={styles.exploreButton}>
+          <Ionicons name="map" size={20} color="#fff" />
+          <Text style={styles.exploreButtonText}>Find on Map</Text>
+        </TouchableOpacity>
+      </View>
+    </SlideIn>
+  </FadeIn>
+);
 
 export default Saved
 
@@ -152,6 +197,35 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
     flexGrow: 1,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  activeTab: {
+    backgroundColor: '#667eea',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#999',
+  },
+  activeTabText: {
+    color: '#fff',
   },
   emptyContainer: {
     flex: 1,
@@ -212,7 +286,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginLeft: 8,
   },
-  savedItemsContainer: {
+  itemsContainer: {
     marginBottom: 20,
   },
   savedItem: {
@@ -253,20 +327,5 @@ const styles = StyleSheet.create({
   },
   unsaveButton: {
     padding: 8,
-  },
-  tipsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 20,
-  },
-  tipsText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 12,
-    lineHeight: 20,
   },
 })

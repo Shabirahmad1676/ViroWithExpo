@@ -85,7 +85,7 @@ export const AdCard = ({ ad, onPress, onSave }) => {
               <Text style={styles.title} numberOfLines={2}>
                 {ad.title}
               </Text>
-              {ad.rating && (
+              {!!ad.rating && (
                 <View style={styles.ratingContainer}>
                   <Ionicons name="star" size={16} color="#FFD700" />
                   <Text style={styles.ratingText}>{ad.rating}</Text>

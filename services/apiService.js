@@ -570,5 +570,42 @@ export default {
   // Search
   searchBillboards,
   getBillboardsByCategory,
+
+  // Coupons
+  getUserCoupons,
+};
+
+
+// ============================================
+// COUPONS API
+// ============================================
+
+/**
+ * Get user's saved coupons
+ * @param {string} userId - User UUID
+ * @returns {Promise<Array>} Array of coupon objects
+ */
+export const getUserCoupons = async (userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('user_coupons')
+      .select(`
+        *,
+        coupons:coupons (*)
+      `)
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching user coupons:', error);
+      throw error;
+    }
+
+    return { data, error: null };
+  } catch (error) {
+    console.error('Error in getUserCoupons:', error);
+    return { data: null, error };
+  }
 };
 
