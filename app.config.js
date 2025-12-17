@@ -72,7 +72,6 @@ module.exports = {
             "compileSdkVersion": 35,
             "targetSdkVersion": 34,
             "buildToolsVersion": "35.0.0",
-            "kotlinVersion": "1.9.24",
             "packagingOptions": {
               "pickFirst": [
                 "lib/x86/libc++_shared.so",
