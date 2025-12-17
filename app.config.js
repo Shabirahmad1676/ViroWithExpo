@@ -56,14 +56,13 @@ module.exports = {
       [
         "@rnmapbox/maps",
         {
-          RNMapboxMapsDownloadToken: process.env.MAPBOX_API_KEY,
-          RNMapboxMapsVersion: "11.0.0"
+          RNMapboxMapsDownloadToken: process.env.MAPBOX_API_KEY
         }
       ],
       [
         "expo-location",
         {
-          locationwhenInUserPermission: "Show Current location on map"
+          locationWhenInUsePermission: "Show Current location on map"
         }
       ],
       [
@@ -73,6 +72,7 @@ module.exports = {
             "compileSdkVersion": 35,
             "targetSdkVersion": 34,
             "buildToolsVersion": "35.0.0",
+            "kotlinVersion": "1.9.24",
             "packagingOptions": {
               "pickFirst": [
                 "lib/x86/libc++_shared.so",
