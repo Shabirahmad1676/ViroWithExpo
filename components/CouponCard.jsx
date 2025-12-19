@@ -1,99 +1,74 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
-import QRCode from 'react-native-qrcode-svg';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Clipboard } from 'react-native'; // Use Clipboard from react-native or expo-clipboard
+import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { FadeIn } from './animations';
+import SwipeableButton from './SwipeableButton';
 
-const CouponCard = ({ title, discountAmount, discountCode, expiryDate, valid = true }) => {
-    const [showQR, setShowQR] = useState(false);
+const CouponCard = ({ title, discountAmount, discountCode, expiryDate }) => {
+    const [redeemed, setRedeemed] = useState(false);
+
+    const handleRedeem = async () => {
+        // Haptics
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+        // Copy to clipboard
+        Clipboard.setString(discountCode);
+
+        setRedeemed(true);
+    };
 
     return (
-        <>
-            <FadeIn>
-                <TouchableOpacity
-                    style={styles.card}
-                    onPress={() => discountCode && setShowQR(true)}
-                    activeOpacity={discountCode ? 0.9 : 1}
-                >
-                    {/* Left Side: Ticket Stub Visualization */}
-                    <View style={styles.leftStub}>
-                        <View style={styles.hole} />
-                        <Ionicons name="pricetag" size={24} color="#fff" />
-                        <Text style={styles.verticalText}>COUPON</Text>
-                        <View style={[styles.hole, { top: 'auto', bottom: -10 }]} />
-                    </View>
+        <FadeIn>
+            <View style={styles.card}>
+                {/* Left Side: Ticket Stub Visualization */}
+                <View style={styles.leftStub}>
+                    <View style={styles.hole} />
+                    <Ionicons name="pricetag" size={24} color="#fff" />
+                    <Text style={styles.verticalText}>COUPON</Text>
+                    <View style={[styles.hole, { top: 'auto', bottom: -10 }]} />
+                </View>
 
-                    {/* Right Side: Content */}
-                    <View style={styles.content}>
-                        <Text style={styles.discountText}>{discountAmount}</Text>
-                        <Text style={styles.titleText} numberOfLines={2}>{title}</Text>
-                        <Text style={styles.expiryText}>
-                            Valid until: {(() => {
-                                try {
-                                    return expiryDate ? new Date(expiryDate).toLocaleDateString() : 'Never expires';
-                                } catch (e) {
-                                    return 'Never expires';
-                                }
-                            })()}
-                        </Text>
+                {/* Right Side: Content */}
+                <View style={styles.content}>
+                    <Text style={styles.discountText}>{discountAmount}</Text>
+                    <Text style={styles.titleText} numberOfLines={2}>{title}</Text>
+                    <Text style={styles.expiryText}>
+                        Valid until: {(() => {
+                            try {
+                                return expiryDate ? new Date(expiryDate).toLocaleDateString() : 'Never expires';
+                            } catch (e) {
+                                return 'Never expires';
+                            }
+                        })()}
+                    </Text>
 
-                        <View style={styles.ctaRow}>
-                            <Text style={[styles.tapText, !discountCode && { color: '#999' }]}>
-                                {discountCode ? 'Tap to Redeem' : 'Code Unavailable'}
-                            </Text>
-                            {discountCode && <Ionicons name="chevron-forward" size={16} color="#667eea" />}
-                        </View>
-                    </View>
-                </TouchableOpacity>
-            </FadeIn>
-
-            {/* QR Code Modal */}
-            <Modal
-                visible={showQR}
-                transparent={true}
-                animationType="fade"
-                onRequestClose={() => setShowQR(false)}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Scan to Redeem</Text>
-                        <Text style={styles.modalSubtitle}>Show this code to the cashier</Text>
-
-                        {discountCode ? (
-                            <>
-                                <View style={styles.qrContainer}>
-                                    <QRCode
-                                        value={discountCode}
-                                        size={200}
-                                        color="black"
-                                        backgroundColor="white"
-                                    />
-                                </View>
-
-                                <View style={styles.codeContainer}>
-                                    <Text style={styles.codeLabel}>Code:</Text>
-                                    <Text style={styles.codeValue}>{discountCode}</Text>
-                                </View>
-                            </>
+                    {/* Action Area */}
+                    <View style={styles.actionArea}>
+                        {redeemed ? (
+                            <View style={styles.codeDisplay}>
+                                <Text style={styles.codeLabel}>Code Copied!</Text>
+                                <Text style={styles.codeValue}>{discountCode}</Text>
+                            </View>
                         ) : (
-                            <View style={[styles.qrContainer, { alignItems: 'center', justifyContent: 'center', height: 240 }]}>
-                                <Ionicons name="alert-circle-outline" size={64} color="#ccc" />
-                                <Text style={{ marginTop: 16, color: '#666', textAlign: 'center' }}>
-                                    No code available for this coupon.
-                                </Text>
+                            <View style={{ width: '100%' }}>
+                                {discountCode ? (
+                                    <SwipeableButton
+                                        label="Slide to Reveal"
+                                        onSwipeSuccess={handleRedeem}
+                                        width="100%"
+                                    />
+                                ) : (
+                                    <View style={styles.unavailableBadge}>
+                                        <Text style={styles.unavailableText}>Code Unavailable</Text>
+                                    </View>
+                                )}
                             </View>
                         )}
-
-                        <TouchableOpacity
-                            style={styles.closeButton}
-                            onPress={() => setShowQR(false)}
-                        >
-                            <Text style={styles.closeButtonText}>Close</Text>
-                        </TouchableOpacity>
                     </View>
                 </View>
-            </Modal>
-        </>
+            </View>
+        </FadeIn>
     );
 };
 
@@ -109,7 +84,7 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 4,
         overflow: 'hidden',
-        height: 120,
+        minHeight: 140, // Increased height for slider
     },
     leftStub: {
         width: 50,
@@ -125,7 +100,7 @@ const styles = StyleSheet.create({
         width: 20,
         height: 20,
         borderRadius: 10,
-        backgroundColor: '#f8f9ff', // Matches screen background
+        backgroundColor: '#f8f9ff',
         position: 'absolute',
         top: -10,
         left: 15,
@@ -150,95 +125,52 @@ const styles = StyleSheet.create({
         color: '#667eea',
     },
     titleText: {
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: '600',
         color: '#1a1a2e',
         marginBottom: 4,
+        opacity: 0.8,
     },
     expiryText: {
         fontSize: 12,
         color: '#999',
-        marginBottom: 8,
+        marginBottom: 12,
     },
-    ctaRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    tapText: {
-        fontSize: 12,
-        color: '#667eea',
-        fontWeight: '600',
-        marginRight: 4,
-    },
-
-    // Modal Styles
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.8)',
+    actionArea: {
+        marginTop: 4,
+        minHeight: 50,
         justifyContent: 'center',
+    },
+    codeDisplay: {
+        backgroundColor: '#f0f9f4',
+        padding: 10,
+        borderRadius: 8,
         alignItems: 'center',
-        padding: 20,
-    },
-    modalContent: {
-        backgroundColor: '#fff',
-        borderRadius: 24,
-        padding: 30,
-        alignItems: 'center',
-        width: '100%',
-        maxWidth: 340,
-    },
-    modalTitle: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: '#1a1a2e',
-        marginBottom: 8,
-    },
-    modalSubtitle: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 30,
-    },
-    qrContainer: {
-        padding: 20,
-        backgroundColor: '#fff',
-        borderRadius: 20,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 5,
-        marginBottom: 30,
-    },
-    codeContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 30,
-        backgroundColor: '#f5f6fa',
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 10,
+        flexDirection: 'column',
+        borderWidth: 1,
+        borderColor: '#c3e6cb',
     },
     codeLabel: {
-        fontSize: 14,
-        color: '#666',
-        marginRight: 8,
+        color: '#2e7d32',
+        fontSize: 12,
+        fontWeight: '600',
+        marginBottom: 2,
     },
     codeValue: {
+        color: '#1b5e20',
         fontSize: 18,
-        fontWeight: 'bold',
-        color: '#667eea',
-        letterSpacing: 1,
+        fontWeight: '800',
+        letterSpacing: 2,
     },
-    closeButton: {
-        paddingVertical: 12,
-        paddingHorizontal: 40,
-        backgroundColor: '#1a1a2e',
-        borderRadius: 12,
+    unavailableBadge: {
+        backgroundColor: '#f5f5f5',
+        padding: 10,
+        borderRadius: 8,
+        alignItems: 'center',
     },
-    closeButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '600',
+    unavailableText: {
+        color: '#999',
+        fontSize: 12,
     }
 });
 

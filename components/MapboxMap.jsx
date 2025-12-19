@@ -5,7 +5,9 @@ import { useRouter } from "expo-router";
 import * as Location from 'expo-location';
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
-import { getMapBillboards } from '../services/apiService';
+import { getMapBillboards, getPromos, claimCoupon } from '../services/apiService';
+import { supabase } from '../utils/supabase'; // Needed for auth user id
+import { getDistanceFromLatLonInKm } from '../utils/locationUtils';
 
 // Set Access Token
 const mapboxToken = Constants.expoConfig?.extra?.mapboxApiKey || "sk.eyJ1Ijoic2hhYmlyMTIzIiwiYSI6ImNtZTJndDJlZzBuZ3IyaXNhZW4xNmJ4bXkifQ.fXf9lCBKWt87GeRCzNcpsA";
@@ -21,6 +23,9 @@ const MapboxMap = ({ focusCoords, focusId, searchQuery = '', category = 'all', s
     const [userLocation, setUserLocation] = useState(null);
     const [routeGeoJSON, setRouteGeoJSON] = useState(null);
     const [routeDetails, setRouteDetails] = useState(null);
+    const [activePromo, setActivePromo] = useState(null);
+    const [promos, setPromos] = useState([]);
+    const [shownPromos, setShownPromos] = useState([]); // Track shown promos to avoid spamming
 
     // Filter Logic
     const filteredBillboards = React.useMemo(() => {
@@ -55,6 +60,41 @@ const MapboxMap = ({ focusCoords, focusId, searchQuery = '', category = 'all', s
             }
         })();
     }, []);
+
+    // Monitor User Location for Geofences
+    useEffect(() => {
+        if (!userLocation || promos.length === 0) return;
+
+        const [userLon, userLat] = userLocation;
+
+        promos.forEach(fence => {
+            // Check if we haven't shown this promo yet (or maybe reset on exit?)
+            // For now, show once per session or if dismissed.
+            if (shownPromos.includes(fence.id)) return;
+
+            const [fenceLon, fenceLat] = fence.coords;
+            const distance = getDistanceFromLatLonInKm(userLat, userLon, fenceLat, fenceLon);
+            // console.log('distance', distance)
+
+            if (distance <= fence.radiusKm) {
+                // User is inside geofence
+                setActivePromo(fence);
+                // console.log('fence', fence)
+                setShownPromos(prev => [...prev, fence.id]);
+            }
+        });
+    }, [userLocation, promos]);
+
+    // Timer to dismiss promo automatically
+    useEffect(() => {
+        let timer;
+        if (activePromo) {
+            timer = setTimeout(() => {
+                setActivePromo(null);
+            }, 8000); // Dismiss after 8 seconds
+        }
+        return () => clearTimeout(timer);
+    }, [activePromo]);
 
     // Fetch Route when Direction is requested
     useEffect(() => {
@@ -105,7 +145,41 @@ const MapboxMap = ({ focusCoords, focusId, searchQuery = '', category = 'all', s
 
     useEffect(() => {
         fetchBillboards();
+        fetchPromos();
     }, []);
+
+    const fetchPromos = async () => {
+        const { data } = await getPromos();
+        if (data) {
+            setPromos(data);
+        }
+    };
+
+
+
+    const handleClaimCoupon = async () => {
+        if (!activePromo?.couponCode) return;
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                Alert.alert("Login Required", "Please login to save coupons.");
+                return;
+            }
+
+            const { data, error } = await claimCoupon(user.id, activePromo.id, activePromo.couponCode);
+
+            if (error) {
+                Alert.alert("Notice", error.message || "Could not claim coupon.");
+            } else {
+                Alert.alert("Success!", `Coupon "${activePromo.couponCode}" saved to your profile.`);
+                // Optionally dismiss
+                setActivePromo(null);
+            }
+        } catch (e) {
+            console.log("Claim error", e);
+        }
+    };
 
     const fetchBillboards = async () => {
         try {
@@ -276,6 +350,55 @@ const MapboxMap = ({ focusCoords, focusId, searchQuery = '', category = 'all', s
                     <ActivityIndicator size="small" color="#667eea" />
                 </View>
             )}
+            {/* Promo Bubble */}
+            {activePromo && (
+                <View style={styles.promoContainer}>
+                    <View style={styles.promoBubble}>
+                        <TouchableOpacity
+                            style={styles.closePromoBtn}
+                            onPress={() => setActivePromo(null)}
+                        >
+                            <Ionicons name="close-circle" size={24} color="#ccc" />
+                        </TouchableOpacity>
+
+                        <View style={styles.promoIconContainer}>
+                            <Ionicons name="pricetag" size={24} color="#fff" />
+                        </View>
+
+                        <View style={styles.promoTextContainer}>
+                            <Text style={styles.promoTitle}>{activePromo.message}</Text>
+                            <Text style={styles.promoSubtext}>{activePromo.subtext}</Text>
+                        </View>
+
+                        <View style={styles.promoActions}>
+                            {/* Navigation Button */}
+                            {activePromo.billboardId && (
+                                <TouchableOpacity
+                                    style={[styles.promoActionBtn, { backgroundColor: '#333' }]}
+                                    onPress={() => {
+                                        setActivePromo(null);
+                                        router.push(`/post/${activePromo.billboardId}`);
+                                    }}
+                                >
+                                    <Text style={styles.promoActionText}>View Ad</Text>
+                                    <Ionicons name="arrow-forward" size={12} color="#fff" />
+                                </TouchableOpacity>
+                            )}
+
+                            {/* Coupon Button */}
+                            {activePromo.couponCode && (
+                                <TouchableOpacity
+                                    style={[styles.promoActionBtn, { backgroundColor: '#7B1FA2', marginLeft: 8 }]}
+                                    onPress={handleClaimCoupon}
+                                >
+                                    <Text style={styles.promoActionText}>Save {activePromo.couponCode}</Text>
+                                    <Ionicons name="bookmark" size={12} color="#fff" />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+                </View>
+            )}
         </View>
     );
 };
@@ -315,10 +438,10 @@ const styles = StyleSheet.create({
     },
     tripCard: {
         position: 'absolute',
-        bottom: 100, // Above recenter button
+        bottom: 150, // Moved up further
         left: 20,
-        right: 80,
-        backgroundColor: '#fff',
+        right: 20,
+        backgroundColor: '#f0e4e4ff',
         borderRadius: 16,
         padding: 16,
         flexDirection: 'row',
@@ -328,7 +451,8 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
-        elevation: 6,
+        elevation: 10, // Increased elevation
+        zIndex: 100, // Explicit zIndex
     },
     tripInfo: {
         flexDirection: 'row',
@@ -395,6 +519,78 @@ const styles = StyleSheet.create({
         shadowRadius: 2,
         elevation: 4,
         zIndex: 1,
+    },
+    promoContainer: {
+        position: 'absolute',
+        top: 200, // Below header
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+        zIndex: 100,
+        elevation: 100,
+    },
+    promoBubble: {
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        padding: 16,
+        width: '90%',
+        maxWidth: 340,
+        flexDirection: 'row',
+        alignItems: 'center',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 8,
+        borderLeftWidth: 5,
+        borderLeftColor: '#7B1FA2', // Brand color
+    },
+    closePromoBtn: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        zIndex: 1,
+    },
+    promoIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#7B1FA2',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    promoTextContainer: {
+        flex: 1,
+        marginRight: 10,
+    },
+    promoTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 2,
+    },
+    promoSubtext: {
+        fontSize: 12,
+        color: '#666',
+    },
+    promoActions: {
+        flexDirection: 'column',
+        alignItems: 'flex-end',
+        gap: 4
+    },
+    promoActionBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 20,
+    },
+    promoActionText: {
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: 'bold',
+        marginRight: 4,
     }
 });
 
