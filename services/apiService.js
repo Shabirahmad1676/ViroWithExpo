@@ -11,7 +11,7 @@ import { supabase } from '../utils/supabase';
 // ============================================
 
 /**
- * Get all trending billboards for a city (default: Mardan)
+ * Get all trending billboards for a city (default: 'Mardan')
  * @param {string} city - City name (default: 'Mardan')
  * @returns {Promise<Array>} Array of billboard objects
  */
@@ -523,7 +523,8 @@ export const getBillboardsByCategory = async (category, city = 'Mardan') => {
       .eq('category', category)
       .eq('city', city)
       .eq('is_active', true)
-      .order('views', { ascending: false });
+      .order('views', { ascending: false })
+      .limit(50);
 
     if (error) {
       console.error('Error fetching billboards by category:', error);
@@ -536,6 +537,106 @@ export const getBillboardsByCategory = async (category, city = 'Mardan') => {
     return { data: null, error };
   }
 };
+
+// ============================================
+// PROMOS API
+// ============================================
+
+/**
+ * Get active location-based promos
+ * @returns {Promise<Array>} Array of promo objects
+ */
+export const getPromos = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('promos')
+      .select('*')
+      .eq('is_active', true);
+
+    if (error) {
+      console.error('Error fetching promos:', error);
+      throw error;
+    }
+
+    // Transform if necessary to match component expectations
+    // The DB columns (latitude, longitude, radius_km) need to map to our component's expected format (coords: [lon, lat], radiusKm)
+    const formattedData = data.map(p => ({
+      id: p.id,
+      name: p.city,
+      coords: [p.longitude, p.latitude],
+      radiusKm: p.radius_km,
+      message: p.message,
+      subtext: p.subtext,
+      billboardId: p.billboard_id,
+      couponCode: p.coupon_code
+    }));
+
+    return { data: formattedData, error: null };
+  } catch (error) {
+    console.error('Error in getPromos:', error);
+    return { data: null, error };
+  }
+};
+
+/**
+ * Claim a coupon from a promo
+ * @param {string} userId - User UUID
+ * @param {string} promoId - Promo UUID
+ * @param {string} couponCode - Coupon Code
+ */
+export const claimCoupon = async (userId, promoId, couponCode) => {
+  try {
+    const { data, error } = await supabase
+      .from('user_coupons')
+      .insert([
+        { user_id: userId, promo_id: promoId, coupon_code: couponCode }
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === '23505') { // Unique violation
+        return { data: null, error: { message: 'You have already claimed this coupon!' } };
+      }
+      throw error;
+    }
+
+    return { data, error: null };
+  } catch (error) {
+    console.error('Error claiming coupon:', error);
+    return { data: null, error };
+  }
+};
+
+/**
+ * Get user's saved coupons
+ * @param {string} userId - User UUID
+ * @returns {Promise<Array>} Array of coupon objects
+ */
+export const getUserCoupons = async (userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('user_coupons')
+      .select(`
+          *,
+          promos:promos (*)
+        `)
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching user coupons:', error);
+      throw error;
+    }
+
+    return { data, error: null };
+  } catch (error) {
+    console.error('Error in getUserCoupons:', error);
+    return { data: null, error };
+  }
+};
+
 
 // ============================================
 // EXPORT DEFAULT (for convenience)
@@ -571,41 +672,10 @@ export default {
   searchBillboards,
   getBillboardsByCategory,
 
+  // Promos
+  getPromos,
+  claimCoupon,
+
   // Coupons
   getUserCoupons,
 };
-
-
-// ============================================
-// COUPONS API
-// ============================================
-
-/**
- * Get user's saved coupons
- * @param {string} userId - User UUID
- * @returns {Promise<Array>} Array of coupon objects
- */
-export const getUserCoupons = async (userId) => {
-  try {
-    const { data, error } = await supabase
-      .from('user_coupons')
-      .select(`
-        *,
-        coupons:coupons (*)
-      `)
-      .eq('user_id', userId)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching user coupons:', error);
-      throw error;
-    }
-
-    return { data, error: null };
-  } catch (error) {
-    console.error('Error in getUserCoupons:', error);
-    return { data: null, error };
-  }
-};
-

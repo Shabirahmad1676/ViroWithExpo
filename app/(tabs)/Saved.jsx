@@ -152,10 +152,10 @@ const Saved = () => {
                   {coupons.map((userCoupon, index) => (
                     <CouponCard
                       key={userCoupon.id}
-                      title={userCoupon.coupons.title}
-                      discountAmount={userCoupon.coupons.discount_amount}
-                      discountCode={userCoupon.coupons.discount_code}
-                      expiryDate={userCoupon.coupons.valid_until || Date.now() + 86400000 * 30} // Fallback 30 days
+                      title={userCoupon.promos?.subtext || "Limited Offer"}
+                      discountAmount={userCoupon.promos?.message || "Special Deal"}
+                      discountCode={userCoupon.coupon_code}
+                      expiryDate={Date.now() + 86400000 * 30} // 30 days validity
                     />
                   ))}
                 </View>

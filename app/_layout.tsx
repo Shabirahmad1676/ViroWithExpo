@@ -9,6 +9,8 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthProvider } from '@/AuthContext/UserAuth';
 
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
@@ -30,22 +32,25 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <ThemeProvider value={colorScheme === 'light' ? DarkTheme : DefaultTheme}>
-        <Stack screenOptions={{
-          headerShown: false,
-        }}>
-          <Stack.Screen name="(auth)" options={{headerShown:false}} />
-          <Stack.Screen name="Intrest" options={{headerShown:false}} />
-          <Stack.Screen name="(tabs)" options={{headerShown:false}} />
-          <Stack.Screen name="PrivacyPolicy" options={{headerShown:false}} />
-          <Stack.Screen name="post/[id]" options={{headerShown:false}} />
-          <Stack.Screen name="+not-found" options={{headerShown:false}} />
-        </Stack>
-        <StatusBar
-          style='auto'
-        />
-      </ThemeProvider>
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <ThemeProvider value={colorScheme === 'light' ? DarkTheme : DefaultTheme}>
+          <Stack screenOptions={{
+            headerShown: false,
+            animation: 'fade', // Optional: smooth transitions
+          }}>
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="Intrest" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="PrivacyPolicy" options={{ headerShown: false }} />
+            <Stack.Screen name="post/[id]" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" options={{ headerShown: false }} />
+          </Stack>
+          <StatusBar
+            style={colorScheme === 'dark' ? 'light' : 'dark'}
+          />
+        </ThemeProvider>
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }
