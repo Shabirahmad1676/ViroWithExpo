@@ -14,7 +14,7 @@ const CATEGORIES = [
 ]
 
 const MapScreen = () => {
-  const { lat, long, targetId } = useLocalSearchParams();
+  const { lat, long, targetId, showDirection } = useLocalSearchParams();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -31,6 +31,9 @@ const MapScreen = () => {
         <MapboxMap
           focusCoords={lat && long ? [parseFloat(long), parseFloat(lat)] : null}
           focusId={targetId}
+          searchQuery={searchQuery}
+          category={selectedCategory}
+          showDirection={showDirection === 'true'}
         />
       </View>
 
@@ -47,16 +50,16 @@ const MapScreen = () => {
             onChangeText={setSearchQuery}
           />
           <TouchableOpacity style={styles.profileButton}>
-             <View style={styles.profileCircle}>
-                <Text style={styles.profileText}>M</Text>
-             </View>
+            <View style={styles.profileCircle}>
+              <Text style={styles.profileText}>M</Text>
+            </View>
           </TouchableOpacity>
         </View>
 
         {/* Category Chips */}
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false} 
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
           style={styles.categoriesContainer}
           contentContainerStyle={styles.categoriesContent}
         >
@@ -69,10 +72,10 @@ const MapScreen = () => {
               ]}
               onPress={() => setSelectedCategory(cat.id)}
             >
-              <MaterialIcons 
-                name={cat.icon} 
-                size={18} 
-                color={selectedCategory === cat.id ? '#FFF' : '#444'} 
+              <MaterialIcons
+                name={cat.icon}
+                size={18}
+                color={selectedCategory === cat.id ? '#FFF' : '#444'}
               />
               <Text style={[
                 styles.chipText,
@@ -87,16 +90,16 @@ const MapScreen = () => {
 
       {/* Floating Action Buttons (Right Side) */}
       <View style={styles.fabContainer}>
-         {/* My Location FAB */}
-         <TouchableOpacity style={styles.fabSmall} onPress={() => {/* Trigger location (via ref usually) */}}>
-            <MaterialIcons name="my-location" size={24} color="#333" />
-         </TouchableOpacity>
+        {/* My Location FAB */}
+        <TouchableOpacity style={styles.fabSmall} onPress={() => {/* Trigger location (via ref usually) */ }}>
+          <MaterialIcons name="my-location" size={24} color="#333" />
+        </TouchableOpacity>
 
-         {/* FYP: Scan Billboard FAB (Prominent) */}
-         <TouchableOpacity style={styles.fabScan} onPress={onScanPress}>
-            <Ionicons name="scan-outline" size={28} color="#FFF" />
-            <Text style={styles.fabScanText}>Scan</Text>
-         </TouchableOpacity>
+        {/* FYP: Scan Billboard FAB (Prominent) */}
+        <TouchableOpacity style={styles.fabScan} onPress={onScanPress}>
+          <Ionicons name="scan-outline" size={28} color="#FFF" />
+          <Text style={styles.fabScanText}>Scan</Text>
+        </TouchableOpacity>
       </View>
     </View>
   )
@@ -145,16 +148,16 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   profileCircle: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: '#7B1FA2', // Purple brand accent
-      justifyContent: 'center',
-      alignItems: 'center',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#7B1FA2', // Purple brand accent
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   profileText: {
-      color: '#FFF',
-      fontWeight: 'bold',
+    color: '#FFF',
+    fontWeight: 'bold',
   },
   categoriesContainer: {
     flexDirection: 'row',
@@ -215,6 +218,7 @@ const styles = StyleSheet.create({
   fabScan: {
     width: 64,
     height: 64,
+    marginBottom: 70,
     borderRadius: 20, // Squircle shape
     backgroundColor: '#7B1FA2', // High contrast brand color
     justifyContent: 'center',

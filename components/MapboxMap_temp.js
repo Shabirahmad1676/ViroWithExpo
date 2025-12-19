@@ -69,7 +69,7 @@ const MapboxMap = ({ focusCoords, focusId }) => {
                     !isNaN(b.coords[0]) &&
                     !isNaN(b.coords[1])
                 );
-                console.log("Map Billboards Data Check:", validBillboards.length, "items. Sample:", validBillboards[0]);
+                // console.log("Map Billboards Data Check:", validBillboards.length, "items. Sample:", validBillboards[0]);
                 setBillboards(validBillboards);
             }
         } catch (err) {
