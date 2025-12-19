@@ -12,8 +12,8 @@ const CouponCard = ({ title, discountAmount, discountCode, expiryDate, valid = t
             <FadeIn>
                 <TouchableOpacity
                     style={styles.card}
-                    onPress={() => setShowQR(true)}
-                    activeOpacity={0.9}
+                    onPress={() => discountCode && setShowQR(true)}
+                    activeOpacity={discountCode ? 0.9 : 1}
                 >
                     {/* Left Side: Ticket Stub Visualization */}
                     <View style={styles.leftStub}>
@@ -38,8 +38,10 @@ const CouponCard = ({ title, discountAmount, discountCode, expiryDate, valid = t
                         </Text>
 
                         <View style={styles.ctaRow}>
-                            <Text style={styles.tapText}>Tap to Redeem</Text>
-                            <Ionicons name="chevron-forward" size={16} color="#667eea" />
+                            <Text style={[styles.tapText, !discountCode && { color: '#999' }]}>
+                                {discountCode ? 'Tap to Redeem' : 'Code Unavailable'}
+                            </Text>
+                            {discountCode && <Ionicons name="chevron-forward" size={16} color="#667eea" />}
                         </View>
                     </View>
                 </TouchableOpacity>
@@ -57,19 +59,30 @@ const CouponCard = ({ title, discountAmount, discountCode, expiryDate, valid = t
                         <Text style={styles.modalTitle}>Scan to Redeem</Text>
                         <Text style={styles.modalSubtitle}>Show this code to the cashier</Text>
 
-                        <View style={styles.qrContainer}>
-                            <QRCode
-                                value={discountCode}
-                                size={200}
-                                color="black"
-                                backgroundColor="white"
-                            />
-                        </View>
+                        {discountCode ? (
+                            <>
+                                <View style={styles.qrContainer}>
+                                    <QRCode
+                                        value={discountCode}
+                                        size={200}
+                                        color="black"
+                                        backgroundColor="white"
+                                    />
+                                </View>
 
-                        <View style={styles.codeContainer}>
-                            <Text style={styles.codeLabel}>Code:</Text>
-                            <Text style={styles.codeValue}>{discountCode}</Text>
-                        </View>
+                                <View style={styles.codeContainer}>
+                                    <Text style={styles.codeLabel}>Code:</Text>
+                                    <Text style={styles.codeValue}>{discountCode}</Text>
+                                </View>
+                            </>
+                        ) : (
+                            <View style={[styles.qrContainer, { alignItems: 'center', justifyContent: 'center', height: 240 }]}>
+                                <Ionicons name="alert-circle-outline" size={64} color="#ccc" />
+                                <Text style={{ marginTop: 16, color: '#666', textAlign: 'center' }}>
+                                    No code available for this coupon.
+                                </Text>
+                            </View>
+                        )}
 
                         <TouchableOpacity
                             style={styles.closeButton}

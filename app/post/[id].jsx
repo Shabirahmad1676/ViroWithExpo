@@ -110,28 +110,19 @@ const BillBoardDetailsScreen = () => {
   };
 
   const handleDirections = () => {
-    // Use adData.latitude/longitude if available, otherwise fallback to query
     if (adData?.latitude && adData?.longitude) {
-      const scheme = Platform.select({ ios: 'maps:', android: 'geo:' });
-      const latLng = `${adData.latitude},${adData.longitude}`;
-      const label = adData.title || 'Location';
-      const url = Platform.select({
-        ios: `${scheme}?q=${label}&ll=${latLng}`,
-        android: `${scheme}?q=${latLng}(${label})`
+      // Navigate to MapScreen with params to show route
+      router.push({
+        pathname: '/(tabs)/MapScreen',
+        params: {
+          lat: adData.latitude,
+          long: adData.longitude,
+          targetId: id,
+          showDirection: 'true' // String 'true' because params are strings
+        }
       });
-      Linking.openURL(url);
     } else {
-      // Fallback to searching by location text
-      const query = adData?.location || adData?.address;
-      if (query) {
-        const url = Platform.select({
-          ios: `maps:?q=${query}`,
-          android: `geo:0,0?q=${query}`
-        });
-        Linking.openURL(url);
-      } else {
-        alert("Location coordinates not found");
-      }
+      alert("Location coordinates not found");
     }
   };
 

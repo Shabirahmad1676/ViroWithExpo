@@ -12,6 +12,7 @@ import {
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import * as Location from 'expo-location'
 import { getTrendingBillboards } from '../../services/apiService'
 import { useAuth } from '../../AuthContext/UserAuth'
 import { AdCard } from '../../components/AdCard'
@@ -20,20 +21,48 @@ import { FadeIn, SlideIn } from '../../components/animations'
 export default function App() {
   const router = useRouter()
   const { user } = useAuth()
+  const [userCity, setUserCity] = useState(null)
   const [trendingAds, setTrendingAds] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    fetchTrendingAds()
+    (async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync()
+        if (status !== 'granted') {
+          // Permission denied, fallback to default city
+          fetchTrendingAds('Mardan')
+          return
+        }
+
+        let location = await Location.getCurrentPositionAsync({})
+        let reverseGeocode = await Location.reverseGeocodeAsync({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude
+        })
+
+        if (reverseGeocode && reverseGeocode.length > 0) {
+          const city = reverseGeocode[0].city || reverseGeocode[0].district || 'Mardan'
+          console.log("User Location:", city)
+          setUserCity(city)
+          fetchTrendingAds(city)
+        } else {
+          fetchTrendingAds('Mardan')
+        }
+      } catch (error) {
+        console.warn("Location error:", error)
+        fetchTrendingAds('Mardan')
+      }
+    })()
   }, [])
 
-  const fetchTrendingAds = async () => {
+  const fetchTrendingAds = async (city = 'Mardan') => {
     try {
       setLoading(true)
       setError(null)
-      const { data, error: apiError } = await getTrendingBillboards('Mardan')
-      
+      const { data, error: apiError } = await getTrendingBillboards(city)
+
       if (apiError) {
         console.error('Error fetching trending ads:', apiError)
         setError(apiError.message)
