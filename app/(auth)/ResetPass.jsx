@@ -1,14 +1,14 @@
 import React, { useState } from 'react'
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Alert, 
-  SafeAreaView, 
-  ScrollView, 
-  KeyboardAvoidingView, 
-  Platform 
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Input, Button } from 'react-native-elements'
@@ -62,7 +62,7 @@ const ResetPass = () => {
         style={styles.container}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -70,7 +70,7 @@ const ResetPass = () => {
           {/* Header Section */}
           <View style={styles.headerContainer}>
             <View style={styles.logoContainer}>
-              <Ionicons name="shield-checkmark-outline" size={60} color="#667eea" />
+              <Ionicons name="shield-checkmark-outline" size={60} color="#7B1FA2" />
             </View>
             <Text style={styles.title}>Update Password</Text>
             <Text style={styles.subtitle}>Enter your new password below</Text>
@@ -80,7 +80,7 @@ const ResetPass = () => {
           <View style={styles.formContainer}>
             <Input
               label="New Password"
-              leftIcon={{ type: 'ionicon', name: 'lock-closed-outline', color: '#667eea' }}
+              leftIcon={{ type: 'ionicon', name: 'lock-closed-outline', color: '#7B1FA2' }}
               onChangeText={setPassword}
               value={password}
               placeholder="Enter new password"
@@ -93,7 +93,7 @@ const ResetPass = () => {
 
             <Input
               label="Confirm Password"
-              leftIcon={{ type: 'ionicon', name: 'lock-closed-outline', color: '#667eea' }}
+              leftIcon={{ type: 'ionicon', name: 'lock-closed-outline', color: '#7B1FA2' }}
               onChangeText={setConfirmPassword}
               value={confirmPassword}
               placeholder="Confirm new password"
@@ -142,11 +142,11 @@ export default ResetPass
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f8f9ff',
+    backgroundColor: '#FFFFFF',
   },
   container: {
     flex: 1,
-    backgroundColor: '#f8f9ff',
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     paddingHorizontal: 24,
@@ -165,11 +165,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
-    shadowColor: '#667eea',
+    shadowColor: '#7B1FA2',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 12,
-    elevation: 8,
+    elevation: 10,
   },
   title: {
     fontSize: 30,
@@ -187,26 +187,33 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     backgroundColor: '#f8f9fa',
-    borderRadius: 12,
+    borderRadius: 20,
     borderBottomWidth: 0,
     borderWidth: 1,
     borderColor: '#e0e0e0',
-    paddingHorizontal: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
   },
   inputLabel: {
     color: '#333',
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 8,
+    marginLeft: 8,
   },
   inputText: {
     color: '#333',
     fontSize: 16,
   },
   primaryButton: {
-    backgroundColor: '#667eea',
-    borderRadius: 12,
+    backgroundColor: '#7B1FA2',
+    borderRadius: 20,
     paddingVertical: 14,
     marginTop: 16,
+    elevation: 4,
+    shadowColor: '#7B1FA2',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
   },
   primaryButtonTitle: {
     fontSize: 16,
@@ -239,7 +246,7 @@ const styles = StyleSheet.create({
   },
   signInLink: {
     fontSize: 14,
-    color: '#667eea',
+    color: '#7B1FA2',
     fontWeight: '700',
   },
 })

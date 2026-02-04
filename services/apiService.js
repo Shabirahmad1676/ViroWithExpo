@@ -21,8 +21,7 @@ export const getTrendingBillboards = async (city = 'Mardan') => {
       .from('billboards')
       .select('*')
       .eq('city', city)
-      .eq('is_trending', true)
-      .eq('is_active', true)
+      .eq('is_active', true) // Showing all active ads regardless of trending status
       .order('views', { ascending: false })
       .limit(20);
 
@@ -124,7 +123,16 @@ export const getBillboardByMarkerId = async (markerId) => {
  */
 export const incrementBillboardViews = async (id) => {
   try {
-    // First get current views
+    // 1. Log the event in analytics table
+    await supabase
+      .from('billboard_analytics')
+      .insert([{
+        billboard_id: id,
+        event_type: 'view',
+        // user_id: we could fetch it if we want strict tracking, but optional for now
+      }]);
+
+    // 2. Increment aggregate count on billboards table (keep this for valid display)
     const { data: current } = await supabase
       .from('billboards')
       .select('views')
@@ -179,14 +187,26 @@ export const getMapBillboards = async (city = 'Mardan') => {
     }
 
     // Transform data to expected format
-    const transformedData = mapData?.map(item => ({
-      id: item.id || item.billboard_id,
-      billboard_id: item.billboard_id,
-      title: item.title,
-      coords: item.coords, // Already in [longitude, latitude] format
-      image_url: item.image_url,
-      location: item.location,
-    })) || [];
+    const transformedData = mapData?.map(item => {
+      // Ensure coords is a valid array of numbers [lon, lat]
+      let coords = item.coords;
+
+      // Handle Postgres array string format "{lon,lat}" if it comes as string
+      if (typeof coords === 'string') {
+        coords = coords.replace('{', '').replace('}', '').split(',').map(Number);
+      } else if (Array.isArray(coords)) {
+        coords = coords.map(Number);
+      }
+
+      return {
+        id: item.id || item.billboard_id,
+        billboard_id: item.billboard_id,
+        title: item.title,
+        coords: coords,
+        image_url: item.image_url,
+        location: item.location,
+      };
+    }) || [];
 
     return { data: transformedData, error: null };
   } catch (error) {
