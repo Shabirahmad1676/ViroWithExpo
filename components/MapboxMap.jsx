@@ -188,14 +188,19 @@ const MapboxMap = ({ focusCoords, focusId, searchQuery = '', category = 'all', s
             if (error) {
                 console.error('Error fetching map billboards:', error);
             } else {
+                console.log("Raw Map Data:", data?.length);
+                if (data && data.length > 0) {
+                    console.log("First item sample:", JSON.stringify(data[0], null, 2));
+                }
                 // Filter out invalid coordinates to prevent crashes
                 const validBillboards = (data || []).filter(b =>
+                    b.coords &&
                     Array.isArray(b.coords) &&
                     b.coords.length === 2 &&
-                    !isNaN(b.coords[0]) &&
-                    !isNaN(b.coords[1])
+                    b.coords[0] != null &&
+                    b.coords[1] != null
                 );
-                console.log("Map Billboards Data Check:", validBillboards.length, "items");
+                console.log("Map Billboards Validated:", validBillboards.length, "items");
                 setBillboards(validBillboards);
             }
         } catch (err) {

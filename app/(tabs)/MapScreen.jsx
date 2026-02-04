@@ -96,10 +96,10 @@ const MapScreen = () => {
         </TouchableOpacity>
 
         {/* FYP: Scan Billboard FAB (Prominent) */}
-        <TouchableOpacity style={styles.fabScan} onPress={onScanPress}>
+        {/* <TouchableOpacity style={styles.fabScan} onPress={onScanPress}>
           <Ionicons name="scan-outline" size={28} color="#FFF" />
           <Text style={styles.fabScanText}>Scan</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     </View>
   )

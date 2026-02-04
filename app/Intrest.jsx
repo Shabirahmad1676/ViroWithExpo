@@ -57,8 +57,9 @@ const Interest = () => {
       }
 
       if (data?.interests?.length > 0) {
-        // interests already saved → skip this page
-        router.replace('/(tabs)')
+        // interests already saved → pre-fill them so user can edit
+        setSelected(data.interests)
+        setInitialLoading(false)
       } else {
         // no interests yet → let user pick
         setInitialLoading(false)
@@ -182,6 +183,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+    marginTop: 18,
   },
   center: {
     flex: 1,
