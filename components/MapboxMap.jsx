@@ -308,11 +308,11 @@ const MapboxMap = ({ focusCoords, focusId, searchQuery = '', category = 'all', s
                                 <Image
                                     source={{ uri: b.image_url || 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=2940&auto=format&fit=crop' }}
                                     style={styles.markerImage}
-                                    resizeMode="cover"
+                                    resizeMode="contain"
                                     onError={(e) => console.log("MARKER IMAGE ERROR:", b.id, e.nativeEvent.error)}
                                 />
                             </View>
-                            {/* <View style={styles.markerArrow} /> */}
+                            {/* <View style={styles.markerArrow} />  */}
                         </View>
                     </MapboxGL.PointAnnotation>
                 ))}
@@ -505,6 +505,10 @@ const styles = StyleSheet.create({
     markerImage: {
         width: 70,
         height: 50,
+        // width: '100%',
+        // height: '100%',
+        resizeMode: 'cover',
+
     },
     markerArrow: {
         width: 0,

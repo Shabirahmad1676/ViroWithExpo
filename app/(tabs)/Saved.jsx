@@ -149,15 +149,23 @@ const Saved = () => {
                 />
               ) : (
                 <View style={styles.itemsContainer}>
-                  {coupons.map((userCoupon, index) => (
-                    <CouponCard
-                      key={userCoupon.id}
-                      title={userCoupon.promos?.subtext || "Limited Offer"}
-                      discountAmount={userCoupon.promos?.message || "Special Deal"}
-                      discountCode={userCoupon.coupon_code}
-                      expiryDate={Date.now() + 86400000 * 30} // 30 days validity
-                    />
-                  ))}
+                  {coupons.map((userCoupon, index) => {
+                    // It can be a promo-based coupon or a direct billboard coupon
+                    const couponData = userCoupon.coupons || userCoupon.promos;
+                    const title = userCoupon.coupons ? userCoupon.coupons.title : userCoupon.promos?.subtext;
+                    const amount = userCoupon.coupons ? userCoupon.coupons.discount_amount : userCoupon.promos?.message;
+                    const code = userCoupon.coupon_code || userCoupon.coupons?.discount_code;
+
+                    return (
+                      <CouponCard
+                        key={userCoupon.id}
+                        title={title || "Limited Offer"}
+                        discountAmount={amount || "Special Deal"}
+                        discountCode={code}
+                        expiryDate={userCoupon.coupons?.valid_until || Date.now() + 86400000 * 30}
+                      />
+                    );
+                  })}
                 </View>
               )
             )}
