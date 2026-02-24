@@ -71,10 +71,9 @@ export const getAllBillboards = async (city = 'Mardan') => {
 export const getBillboardById = async (id) => {
   try {
     const { data, error } = await supabase
-      .from('billboards')
+      .from('billboarddataformap')
       .select('*')
       .eq('id', id)
-      .eq('is_active', true)
       .maybeSingle();
 
     if (error) {
@@ -441,6 +440,74 @@ export const removeFromFavorites = async (userId, billboardId) => {
 };
 
 // ============================================
+// REVIEWS API
+// ============================================
+
+/**
+ * Get reviews for a billboard
+ * @param {string} billboardId - Billboard UUID
+ * @returns {Promise<Array>} Array of review objects
+ */
+export const getBillboardReviews = async (billboardId) => {
+  try {
+    const { data, error } = await supabase
+      .from('billboard_reviews')
+      .select(`
+        *,
+        profiles:user_id (full_name, avatar_url)
+      `)
+      .eq('billboard_id', billboardId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching reviews:', error);
+      throw error;
+    }
+
+    return { data, error: null };
+  } catch (error) {
+    console.error('Error in getBillboardReviews:', error);
+    return { data: null, error };
+  }
+};
+
+/**
+ * Submit a review for a billboard
+ * @param {string} userId - User UUID
+ * @param {string} billboardId - Billboard UUID
+ * @param {number} rating - Rating (1-5)
+ * @param {string} comment - Review comment
+ */
+export const submitBillboardReview = async (userId, billboardId, rating, comment) => {
+  try {
+    const { data, error } = await supabase
+      .from('billboard_reviews')
+      .upsert([
+        {
+          user_id: userId,
+          billboard_id: billboardId,
+          rating,
+          comment,
+          created_at: new Date().toISOString()
+        }
+      ], { onConflict: 'billboard_id,user_id' })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error submitting review:', error);
+      throw error;
+    }
+
+    return { data, error: null };
+  } catch (error) {
+    console.error('Error in submitBillboardReview:', error);
+    return { data: null, error };
+  }
+};
+
+
+// ============================================
 // PROFILE API
 // ============================================
 
@@ -639,7 +706,8 @@ export const getUserCoupons = async (userId) => {
       .from('user_coupons')
       .select(`
           *,
-          promos:promos (*)
+          promos:promos (*),
+          coupons:coupon_id (*)
         `)
       .eq('user_id', userId)
       .eq('status', 'active')
@@ -657,6 +725,91 @@ export const getUserCoupons = async (userId) => {
   }
 };
 
+/**
+ * Get IDs of coupons already claimed by a user for a specific billboard
+ * @param {string} userId - User UUID
+ * @param {Array} couponIds - Array of coupon IDs to check
+ */
+export const getClaimedCouponIds = async (userId, couponIds) => {
+  try {
+    const { data, error } = await supabase
+      .from('user_coupons')
+      .select('coupon_id')
+      .eq('user_id', userId)
+      .in('coupon_id', couponIds);
+
+    if (error) throw error;
+    return { data: data.map(c => c.coupon_id), error: null };
+  } catch (error) {
+    console.error('Error in getClaimedCouponIds:', error);
+    return { data: [], error };
+  }
+};
+
+
+// ============================================
+// COUPONS API
+// ============================================
+
+/**
+ * Get coupons for a specific billboard
+ * @param {string} billboardId - Billboard UUID
+ * @returns {Promise<Array>} Array of coupon objects
+ */
+export const getBillboardCoupons = async (billboardId) => {
+  try {
+    const { data, error } = await supabase
+      .from('coupons')
+      .select('*')
+      .eq('billboard_id', billboardId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching billboard coupons:', error);
+      throw error;
+    }
+
+    return { data, error: null };
+  } catch (error) {
+    console.error('Error in getBillboardCoupons:', error);
+    return { data: null, error };
+  }
+};
+
+/**
+ * Claim a coupon for a billboard
+ * @param {string} userId - User UUID
+ * @param {string} billboardId - Billboard UUID
+ * @param {string} couponId - Coupon UUID
+ */
+export const claimBillboardCoupon = async (userId, billboardId, couponId) => {
+  try {
+    const { data, error } = await supabase
+      .from('user_coupons')
+      .insert([
+        {
+          user_id: userId,
+          coupon_id: couponId,
+          status: 'active'
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === '23505') { // Unique violation
+        return { data: null, error: { message: 'You have already claimed this coupon!' } };
+      }
+      console.error('Error claiming billboard coupon:', error);
+      throw error;
+    }
+
+    return { data, error: null };
+  } catch (error) {
+    console.error('Error in claimBillboardCoupon:', error);
+    return { data: null, error };
+  }
+};
 
 // ============================================
 // EXPORT DEFAULT (for convenience)
@@ -669,6 +822,8 @@ export default {
   getBillboardById,
   getBillboardByMarkerId,
   incrementBillboardViews,
+  getBillboardReviews,
+  submitBillboardReview,
 
   // Map
   getMapBillboards,
@@ -696,6 +851,13 @@ export default {
   getPromos,
   claimCoupon,
 
+  // Reviews
+  getBillboardReviews,
+  submitBillboardReview,
+
   // Coupons
   getUserCoupons,
+  getBillboardCoupons,
+  claimBillboardCoupon,
+  getClaimedCouponIds,
 };

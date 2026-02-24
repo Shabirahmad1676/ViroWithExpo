@@ -1,9 +1,10 @@
-import { View, Text, ScrollView, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity, Image, ActivityIndicator, Dimensions, Platform, Linking } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity, Image, ActivityIndicator, Dimensions, Platform, Linking, TextInput } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { getBillboardById, incrementBillboardViews, checkIfFavorite, addToFavorites, removeFromFavorites } from '../../services/apiService'
+import { getBillboardById, incrementBillboardViews, checkIfFavorite, addToFavorites, removeFromFavorites, getBillboardCoupons, claimBillboardCoupon, getClaimedCouponIds } from '../../services/apiService'
 import { useAuth } from '../../AuthContext/UserAuth'
+import ReviewSection from '../../components/ReviewSection'
 
 const { width } = Dimensions.get('window')
 
@@ -17,15 +18,70 @@ const BillBoardDetailsScreen = () => {
   const [error, setError] = useState(null)
   const [isFavorite, setIsFavorite] = useState(false)
   const [favLoading, setFavLoading] = useState(false)
+  const [coupons, setCoupons] = useState([])
+  const [claimingId, setClaimingId] = useState(null)
 
   useEffect(() => {
     if (id) {
       fetchBillboardDetails()
+      fetchCoupons()
       if (user) {
         checkFavoriteStatus()
       }
     }
   }, [id, user])
+
+  const fetchCoupons = async () => {
+    try {
+      const { data: allCoupons } = await getBillboardCoupons(id)
+      if (!allCoupons) {
+        setCoupons([])
+        return
+      }
+
+      if (user && allCoupons.length > 0) {
+        const couponIds = allCoupons.map(c => c.id)
+        const { data: claimedIds } = await getClaimedCouponIds(user.id, couponIds)
+
+        const updatedCoupons = allCoupons.map(c => ({
+          ...c,
+          isClaimed: claimedIds?.includes(c.id) || false
+        }))
+        setCoupons(updatedCoupons)
+      } else {
+        setCoupons(allCoupons.map(c => ({ ...c, isClaimed: false })))
+      }
+    } catch (err) {
+      console.error('Error fetching coupons:', err)
+    }
+  }
+
+  const handleClaimCoupon = async (couponId) => {
+    if (!user) {
+      alert('Please login to claim coupons')
+      return
+    }
+
+    try {
+      setClaimingId(couponId)
+      const { error } = await claimBillboardCoupon(user.id, id, couponId)
+
+      if (error) {
+        alert(error.message || 'Error claiming coupon')
+      } else {
+        // Update local state immediately
+        setCoupons(prevCoupons =>
+          prevCoupons.map(c => c.id === couponId ? { ...c, isClaimed: true } : c)
+        )
+        alert('Coupon saved to your wallet! Check the "Saved" tab.')
+      }
+    } catch (err) {
+      console.error('Error in handleClaimCoupon:', err)
+      alert('Something went wrong')
+    } finally {
+      setClaimingId(null)
+    }
+  }
 
   const checkFavoriteStatus = async () => {
     try {
@@ -75,11 +131,13 @@ const BillBoardDetailsScreen = () => {
           ...data,
           views: formatViews(data.views || 0),
           image: data.image_url ? { uri: data.image_url } : require('../../assets/coca.jpg'),
+          location: data.city || data.location, // Fix: city is the DB column name
           fullDescription: data.full_description || data.description,
           contact: data.phone_no || data.contact,
           features: data.features || []
         }
         setAdData(formattedData)
+        console.log(formattedData.views)
         await incrementBillboardViews(id)
       } else {
         setError('Billboard not found')
@@ -126,6 +184,7 @@ const BillBoardDetailsScreen = () => {
     }
   };
 
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -158,7 +217,7 @@ const BillBoardDetailsScreen = () => {
           <Image
             source={adData.image}
             style={styles.headerImage}
-            resizeMode="cover"
+            resizeMode="contain"
           />
           {/* Dark Overlay instead of LinearGradient */}
           <View style={styles.darkOverlay} />
@@ -202,7 +261,9 @@ const BillBoardDetailsScreen = () => {
             <Text style={styles.title} numberOfLines={2}>{adData.title}</Text>
             <View style={styles.ratingRow}>
               <Ionicons name="star" size={16} color="#FFD700" />
-              <Text style={styles.ratingText}>{adData.rating} (120 reviews)</Text>
+              <Text style={styles.ratingText}>
+                {adData.avg_rating > 0 ? adData.avg_rating.toFixed(1) : adData.rating || 'No rating'}
+              </Text>
               <View style={styles.dotSeparator} />
               <Ionicons name="eye-outline" size={16} color="#fff" />
               <Text style={styles.viewsText}>{adData.views} views</Text>
@@ -256,6 +317,57 @@ const BillBoardDetailsScreen = () => {
             </View>
           )}
 
+          {/* Coupons & Offers */}
+          {coupons.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Coupons & Offers</Text>
+                <View style={[styles.badge, { backgroundColor: '#fff5f5' }]}>
+                  <Text style={[styles.badgeText, { color: '#ff4757' }]}>{coupons.length} Available</Text>
+                </View>
+              </View>
+              {coupons.map((coupon) => (
+                <View key={coupon.id} style={styles.couponCard}>
+                  <View style={styles.couponLeft}>
+                    <View style={styles.couponDot} />
+                    <Ionicons name="pricetag" size={20} color="#667eea" />
+                    <View style={[styles.couponDot, { top: 'auto', bottom: -5 }]} />
+                  </View>
+                  <View style={styles.couponContent}>
+                    <View style={styles.couponMain}>
+                      <Text style={styles.couponAmount}>{coupon.discount_amount}</Text>
+                      <Text style={styles.couponTitle} numberOfLines={1}>{coupon.title}</Text>
+                      <Text style={styles.couponExpiry}>Valid: {coupon.valid_until ? new Date(coupon.valid_until).toLocaleDateString() : 'No expiry'}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[
+                        styles.claimButton,
+                        (claimingId === coupon.id || coupon.isClaimed) && styles.disabledButton
+                      ]}
+                      onPress={() => handleClaimCoupon(coupon.id)}
+                      disabled={claimingId === coupon.id || coupon.isClaimed}
+                    >
+                      {claimingId === coupon.id ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <Text style={styles.claimButtonText}>
+                          {coupon.isClaimed ? 'Claimed' : 'Claim'}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Reviews Section */}
+          <ReviewSection
+            billboardId={id}
+            user={user}
+            onReviewSubmitted={() => fetchBillboardDetails()}
+          />
+
           {/* Contact Details */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Contact Info</Text>
@@ -286,6 +398,7 @@ const BillBoardDetailsScreen = () => {
           <View style={{ height: 40 }} />
         </View>
       </ScrollView>
+
     </View>
   )
 }
@@ -583,5 +696,92 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#e0e6ff',
     marginVertical: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  couponCard: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#f0f2ff',
+    overflow: 'hidden',
+    height: 90,
+  },
+  couponLeft: {
+    width: 40,
+    backgroundColor: '#f8f9ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRightWidth: 1,
+    borderRightColor: '#f0f2ff',
+    borderStyle: 'dashed',
+    position: 'relative',
+  },
+  couponDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#f0f2ff',
+    position: 'absolute',
+    top: -5,
+    left: 15,
+  },
+  couponContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  couponMain: {
+    flex: 1,
+  },
+  couponAmount: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#667eea',
+  },
+  couponTitle: {
+    fontSize: 13,
+    color: '#1a1a2e',
+    fontWeight: '600',
+    opacity: 0.8,
+  },
+  couponExpiry: {
+    fontSize: 11,
+    color: '#999',
+    marginTop: 2,
+  },
+  claimButton: {
+    backgroundColor: '#667eea',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginLeft: 12,
+  },
+  disabledButton: {
+    backgroundColor: '#a5b4fc',
+  },
+  claimButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
   },
 })

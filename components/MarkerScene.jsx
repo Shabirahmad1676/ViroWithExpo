@@ -7,8 +7,9 @@ import {
   ViroText,
 } from "@reactvision/react-viro";
 import { Linking } from "react-native";
-import { getBillboardByMarkerId, checkIfFavorite, addToFavorites } from "../services/apiService";
+import { getBillboardByMarkerId, checkIfFavorite, addToFavorites, getBillboardCoupons, claimBillboardCoupon, getClaimedCouponIds } from "../services/apiService";
 import { useAuth } from "../AuthContext/UserAuth";
+import { Alert } from "react-native";
 
 export default function MarkerScene() {
   const { user } = useAuth();
@@ -16,6 +17,8 @@ export default function MarkerScene() {
   const [targetsLoaded, setTargetsLoaded] = useState(false);
   const [billboardData, setBillboardData] = useState(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [coupons, setCoupons] = useState([]);
+  const [isClaimed, setIsClaimed] = useState(false);
 
   // Register marker target
   useEffect(() => {
@@ -33,13 +36,14 @@ export default function MarkerScene() {
   const fetchBillboard = async () => {
     try {
       const { data, error } = await getBillboardByMarkerId("logoMarker");
-      
+
       if (error) {
         console.error("Error fetching billboard:", error.message);
       } else {
         setBillboardData(data);
         if (user) {
           await checkFavoriteStatus(data.marker_id);
+          await fetchCoupons(data.id);
         }
         console.log("Billboard loaded:", data);
       }
@@ -48,9 +52,44 @@ export default function MarkerScene() {
     }
   };
 
+  const fetchCoupons = async (billboardId) => {
+    try {
+      const { data: allCoupons } = await getBillboardCoupons(billboardId);
+      setCoupons(allCoupons || []);
+
+      // Check if any of these are already claimed
+      if (user && allCoupons && allCoupons.length > 0) {
+        const { data: claimedIds } = await getClaimedCouponIds(user.id, allCoupons.map(c => c.id));
+        if (claimedIds && claimedIds.length > 0) {
+          setIsClaimed(true);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching coupons:", err);
+    }
+  };
+
+  const handleClaimARCoupon = async () => {
+    if (!user || coupons.length === 0) return;
+
+    try {
+      const coupon = coupons[0]; // Claim the first one found for AR simplicity
+      const { error } = await claimBillboardCoupon(user.id, billboardData.id, coupon.id);
+
+      if (error) {
+        Alert.alert("Offer", error.message || "Failed to claim coupon");
+      } else {
+        setIsClaimed(true);
+        Alert.alert("Success!", `Coupon "${coupon.title}" saved to your coupons!`);
+      }
+    } catch (err) {
+      console.error("Error claiming AR coupon:", err);
+    }
+  };
+
   const checkFavoriteStatus = async (markerId) => {
     if (!user) return;
-    
+
     try {
       const { data, error } = await checkIfFavorite(user.id, markerId);
       if (!error && data) {
@@ -66,7 +105,7 @@ export default function MarkerScene() {
 
     try {
       const { error } = await addToFavorites(user.id, billboardData.id, billboardData.marker_id);
-      
+
       if (!error) {
         setIsSaved(true);
         console.log("Billboard saved to favorites");
@@ -82,9 +121,8 @@ export default function MarkerScene() {
   const contactOnWhatsApp = () => {
     console.log("WA clicked");
     if (!billboardData?.phone_no) return;
-    const url = `https://wa.me/${
-      billboardData.phone_no
-    }?text=${encodeURIComponent("Hello! I'm interested in your services.")}`;
+    const url = `https://wa.me/${billboardData.phone_no
+      }?text=${encodeURIComponent("Hello! I'm interested in your services.")}`;
     Linking.openURL(url);
   };
 
@@ -122,13 +160,19 @@ export default function MarkerScene() {
               rotation={[-89, -3, 0]}
               style={{ fontSize: 12, color: "#000", fontWeight: "bold" }}
             />
-            {/* <ViroText
-              text={billboardData.description}
-              position={[0, -0.3, -1]}
-              scale={[0.15, 0.15, 0.15]}
-              rotation={[-90, 0, 0]}
-              style={{ fontSize: 12, color: "#333" }}
-            />  */}
+
+            {/* Coupons Pop-up */}
+            {coupons.length > 0 && (
+              <ViroText
+                text={isClaimed ? "✓ Offer Saved!" : `🎁 ${coupons[0].discount_amount} OFF! Click to Save`}
+                position={[0.2, -1.2, -0.4]}
+                scale={[0.3, 0.3, 0.3]}
+                rotation={[-89, -3, 0]}
+                style={{ fontSize: 14, color: isClaimed ? "#28a745" : "#ff4757", fontWeight: "bold" }}
+                onClick={handleClaimARCoupon}
+              />
+            )}
+
             <ViroText
               text="Website"
               position={[0.7, -1.99, -0.5]}
@@ -148,7 +192,7 @@ export default function MarkerScene() {
 
             {/* saved button */}
             <ViroText
-              text={isSaved ? " Saved" : "Save to Favorites"}
+              text={isSaved ? "✓ Saved" : "Save to Favorites"}
               position={[0.2, -1.9, -1.03]}
               scale={[0.5, 0.5, 0.5]}
               rotation={[-90, 0, 0]}
